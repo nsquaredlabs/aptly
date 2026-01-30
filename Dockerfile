@@ -21,8 +21,9 @@ COPY src/ ./src/
 RUN useradd -m -u 1000 appuser
 USER appuser
 
-# Expose port
-EXPOSE 8000
+# Default port (Railway overrides via $PORT)
+ENV PORT=8000
+EXPOSE $PORT
 
-# Run the application
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run the application (shell form to expand $PORT)
+CMD uvicorn src.main:app --host 0.0.0.0 --port $PORT
