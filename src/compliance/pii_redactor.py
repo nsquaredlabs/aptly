@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 from presidio_analyzer import AnalyzerEngine
+from presidio_analyzer.nlp_engine import NlpEngineProvider
 from presidio_anonymizer import AnonymizerEngine
 
 # Supported PII entity types
@@ -55,7 +56,13 @@ class PIIRedactor:
     """
 
     def __init__(self, mode: RedactionMode = "mask"):
-        self.analyzer = AnalyzerEngine()
+        # Configure NLP engine to use the smaller spaCy model
+        nlp_config = {
+            "nlp_engine_name": "spacy",
+            "models": [{"lang_code": "en", "model_name": "en_core_web_sm"}],
+        }
+        nlp_engine = NlpEngineProvider(nlp_configuration=nlp_config).create_engine()
+        self.analyzer = AnalyzerEngine(nlp_engine=nlp_engine)
         self.anonymizer = AnonymizerEngine()
         self.mode = mode
 
