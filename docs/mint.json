@@ -1,4 +1,5 @@
 {
+  "$schema": "https://mintlify.com/schema.json",
   "name": "Aptly",
   "logo": {
     "dark": "/logo/dark.svg",
@@ -24,16 +25,6 @@
     "name": "Get Started",
     "url": "https://aptly.dev"
   },
-  "tabs": [
-    {
-      "name": "API Reference",
-      "url": "api"
-    },
-    {
-      "name": "Guides",
-      "url": "guides"
-    }
-  ],
   "anchors": [
     {
       "name": "Community",
@@ -61,13 +52,22 @@
         "api/health",
         "api/chat-completions",
         {
+          "group": "Admin",
+          "pages": [
+            "api/admin/create-customer",
+            "api/admin/list-customers",
+            "api/admin/get-customer",
+            "api/admin/create-api-key"
+          ]
+        },
+        {
           "group": "Your Account",
           "pages": [
+            "api/customer/get-profile",
+            "api/customer/update-settings",
             "api/customer/list-keys",
             "api/customer/create-key",
-            "api/customer/revoke-key",
-            "api/customer/get-profile",
-            "api/customer/update-settings"
+            "api/customer/revoke-key"
           ]
         },
         {
@@ -89,9 +89,11 @@
       ]
     },
     {
-      "group": "Understanding Aptly",
+      "group": "Deployment",
       "pages": [
-        "deployment/architecture"
+        "deployment/architecture",
+        "deployment/production",
+        "deployment/local-development"
       ]
     },
     {
@@ -112,5 +114,8 @@
     "playground": {
       "mode": "simple"
     }
+  },
+  "mermaid": {
+    "theme": "default"
   }
 }
