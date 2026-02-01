@@ -82,6 +82,7 @@
     {
       "group": "Guides",
       "pages": [
+        "guides/index",
         "guides/pii-redaction",
         "guides/compliance",
         "guides/rate-limiting",
