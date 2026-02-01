@@ -7,9 +7,43 @@ description: "Compliance-as-a-service middleware for LLMs"
 
 Aptly is a **compliance-as-a-service middleware** that sits between your application and LLM providers (OpenAI, Anthropic, Google, etc.), automatically handling PII redaction, audit logging, and compliance requirements.
 
-<Frame>
-  <img src="/images/aptly-flow.png" alt="Aptly Request Flow" />
-</Frame>
+## How It Works
+
+```mermaid
+graph TB
+    Client[Your Application]
+
+    subgraph Aptly["Aptly Proxy"]
+        Auth[1. Authenticate<br/>API Key]
+        PII[2. PII Detection<br/>Scan for sensitive data]
+        Redact[3. Redaction<br/>john@example.com → EMAIL_A]
+        Audit[5. Audit Log<br/>Immutable record]
+    end
+
+    LLM[LLM Provider<br/>OpenAI/Anthropic/Google]
+    DB[(Supabase<br/>Database)]
+
+    Client -->|POST /v1/chat/completions| Auth
+    Auth -->|✓ Valid| PII
+    Auth -->|✗ Invalid| Reject[401 Unauthorized]
+    PII --> Redact
+    Redact -->|4. Redacted Request| LLM
+    LLM -->|Response| Audit
+    Audit -->|Store| DB
+    Audit -->|Clean Response| Client
+
+    style Aptly fill:#e3f2fd
+    style Auth fill:#bbdefb
+    style PII fill:#90caf9
+    style Redact fill:#64b5f6
+    style Audit fill:#42a5f5
+    style LLM fill:#fff3e0
+    style DB fill:#f3e5f5
+```
+
+<Note>
+**Key Point:** The LLM provider never sees the original PII - only the redacted version (e.g., "EMAIL_A" instead of "john@example.com").
+</Note>
 
 ## The Problem
 
