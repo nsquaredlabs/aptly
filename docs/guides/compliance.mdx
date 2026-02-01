@@ -30,7 +30,7 @@ Aptly supports the following compliance frameworks:
 ```python
 # PII is automatically redacted in all requests
 response = requests.post(
-    "https://api.aptly.dev/v1/chat/completions",
+    "https://api-aptly.nsquaredlabs.com/v1/chat/completions",
     headers={"Authorization": "Bearer apt_live_xyz789"},
     json={
         "model": "gpt-4",
@@ -72,7 +72,7 @@ Logs cannot be modified or deleted - enforced by database triggers.
 ```python
 # Get audit logs for compliance review
 response = requests.get(
-    "https://api.aptly.dev/v1/logs",
+    "https://api-aptly.nsquaredlabs.com/v1/logs",
     headers={"Authorization": "Bearer apt_live_xyz789"},
     params={
         "start_date": "2026-01-01",
@@ -126,7 +126,7 @@ See [Query Audit Logs](/api/audit-logs/query-logs) for details.
 **How to check:**
 ```python
 response = requests.get(
-    "https://api.aptly.dev/v1/me",
+    "https://api-aptly.nsquaredlabs.com/v1/me",
     headers={"Authorization": "Bearer apt_live_xyz789"}
 )
 print(f"Retention: {response.json()['retention_days']} days")
@@ -152,7 +152,7 @@ print(f"Retention: {response.json()['retention_days']} days")
 ```python
 # Configure for HIPAA compliance
 requests.patch(
-    "https://api.aptly.dev/v1/me",
+    "https://api-aptly.nsquaredlabs.com/v1/me",
     headers={"Authorization": "Bearer apt_live_xyz789"},
     json={
         "pii_redaction_mode": "remove",  # Maximum privacy
@@ -184,7 +184,7 @@ requests.patch(
 ```python
 # Configure for SOC2
 requests.patch(
-    "https://api.aptly.dev/v1/me",
+    "https://api-aptly.nsquaredlabs.com/v1/me",
     headers={"Authorization": "Bearer apt_live_xyz789"},
     json={
         "pii_redaction_mode": "mask",  # Balanced approach
@@ -200,20 +200,20 @@ For SOC2 audits, use these endpoints to collect evidence:
 ```python
 # 1. Show access controls
 profile = requests.get(
-    "https://api.aptly.dev/v1/me",
+    "https://api-aptly.nsquaredlabs.com/v1/me",
     headers={"Authorization": "Bearer apt_live_xyz789"}
 ).json()
 
 # 2. Show audit logging
 logs = requests.get(
-    "https://api.aptly.dev/v1/logs",
+    "https://api-aptly.nsquaredlabs.com/v1/logs",
     headers={"Authorization": "Bearer apt_live_xyz789"},
     params={"limit": 100}
 ).json()
 
 # 3. Show PII protection
 log_detail = requests.get(
-    "https://api.aptly.dev/v1/logs/log_abc123",
+    "https://api-aptly.nsquaredlabs.com/v1/logs/log_abc123",
     headers={"Authorization": "Bearer apt_live_xyz789"}
 ).json()
 
@@ -240,7 +240,7 @@ log_detail = requests.get(
 ```python
 # Users can access their data via audit logs
 logs = requests.get(
-    "https://api.aptly.dev/v1/logs",
+    "https://api-aptly.nsquaredlabs.com/v1/logs",
     headers={"Authorization": "Bearer apt_live_xyz789"},
     params={"user_id": "user_123"}
 ).json()
@@ -260,7 +260,7 @@ Contact admin - audit logs are immutable by design.
 import json
 
 logs = requests.get(
-    "https://api.aptly.dev/v1/logs",
+    "https://api-aptly.nsquaredlabs.com/v1/logs",
     headers={"Authorization": "Bearer apt_live_xyz789"},
     params={"user_id": "user_123", "limit": 1000}
 ).json()
@@ -274,7 +274,7 @@ with open('user_data_export.json', 'w') as f:
 ```python
 # Configure for GDPR
 requests.patch(
-    "https://api.aptly.dev/v1/me",
+    "https://api-aptly.nsquaredlabs.com/v1/me",
     headers={"Authorization": "Bearer apt_live_xyz789"},
     json={
         "pii_redaction_mode": "hash",  # Consistent but private
@@ -319,7 +319,7 @@ request = {
 ```python
 # Configure for PCI-DSS
 requests.patch(
-    "https://api.aptly.dev/v1/me",
+    "https://api-aptly.nsquaredlabs.com/v1/me",
     headers={"Authorization": "Bearer apt_live_xyz789"},
     json={
         "pii_redaction_mode": "remove",  # Maximum protection for card data
@@ -335,7 +335,7 @@ You can enable multiple frameworks:
 ```python
 # Healthcare + enterprise
 requests.patch(
-    "https://api.aptly.dev/v1/me",
+    "https://api-aptly.nsquaredlabs.com/v1/me",
     headers={"Authorization": "Bearer apt_live_xyz789"},
     json={
         "compliance_frameworks": ["HIPAA", "SOC2", "GDPR"]
@@ -390,7 +390,7 @@ def generate_compliance_report(api_key, month, year):
     page = 1
     while True:
         response = requests.get(
-            "https://api.aptly.dev/v1/logs",
+            "https://api-aptly.nsquaredlabs.com/v1/logs",
             headers={"Authorization": f"Bearer {api_key}"},
             params={
                 "start_date": start_date,

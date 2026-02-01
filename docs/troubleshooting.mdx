@@ -24,11 +24,11 @@ This guide covers common issues you may encounter when using Aptly and how to re
 
     ```bash
     # Correct format
-    curl https://api.aptly.dev/v1/logs \
+    curl https://api-aptly.nsquaredlabs.com/v1/logs \
       -H "Authorization: Bearer apt_live_xyz789..."
 
     # Common mistake - missing "Bearer"
-    curl https://api.aptly.dev/v1/logs \
+    curl https://api-aptly.nsquaredlabs.com/v1/logs \
       -H "Authorization: apt_live_xyz789..."  # ❌ Wrong
     ```
   </Accordion>
@@ -82,7 +82,7 @@ This guide covers common issues you may encounter when using Aptly and how to re
     ```python
     # Correct
     response = requests.post(
-        "https://api.aptly.dev/v1/chat/completions",
+        "https://api-aptly.nsquaredlabs.com/v1/chat/completions",
         json={
             "model": "gpt-4",
             "api_keys": {"openai": "sk-..."}  # ✅ Correct provider
@@ -91,7 +91,7 @@ This guide covers common issues you may encounter when using Aptly and how to re
 
     # Wrong
     response = requests.post(
-        "https://api.aptly.dev/v1/chat/completions",
+        "https://api-aptly.nsquaredlabs.com/v1/chat/completions",
         json={
             "model": "gpt-4",
             "api_keys": {"anthropic": "sk-ant-..."}  # ❌ Wrong provider
@@ -177,7 +177,7 @@ X-RateLimit-Reset: 1706616000  # Unix timestamp when limit resets
     session.mount('https://', HTTPAdapter(max_retries=retries))
 
     response = session.post(
-        "https://api.aptly.dev/v1/chat/completions",
+        "https://api-aptly.nsquaredlabs.com/v1/chat/completions",
         headers={"Authorization": f"Bearer {api_key}"},
         json={...}
     )
@@ -187,7 +187,7 @@ X-RateLimit-Reset: 1706616000  # Unix timestamp when limit resets
   <Accordion title="Check Usage and Upgrade Plan">
     **Monitor your usage:**
     ```bash
-    curl https://api.aptly.dev/v1/me \
+    curl https://api-aptly.nsquaredlabs.com/v1/me \
       -H "Authorization: Bearer $APTLY_API_KEY"
     ```
 
@@ -293,7 +293,7 @@ This is expected behavior for high-confidence detection. Presidio errs on the si
 
     ```python
     response = requests.post(
-        "https://api.aptly.dev/v1/chat/completions",
+        "https://api-aptly.nsquaredlabs.com/v1/chat/completions",
         json={"stream": True, ...},
         stream=True,
         timeout=300  # 5 minutes
@@ -381,7 +381,7 @@ This is expected behavior for high-confidence detection. Presidio errs on the si
     Logs are paginated by default. Use `start_time` and `end_time`:
 
     ```bash
-    curl "https://api.aptly.dev/v1/logs?start_time=2026-01-01T00:00:00Z&end_time=2026-01-31T23:59:59Z" \
+    curl "https://api-aptly.nsquaredlabs.com/v1/logs?start_time=2026-01-01T00:00:00Z&end_time=2026-01-31T23:59:59Z" \
       -H "Authorization: Bearer $APTLY_API_KEY"
     ```
   </Accordion>
@@ -405,7 +405,7 @@ This is expected behavior for high-confidence detection. Presidio errs on the si
 
     while True:
         response = requests.get(
-            f"https://api.aptly.dev/v1/logs?offset={offset}&limit={limit}",
+            f"https://api-aptly.nsquaredlabs.com/v1/logs?offset={offset}&limit={limit}",
             headers={"Authorization": f"Bearer {api_key}"}
         )
         data = response.json()
@@ -431,7 +431,7 @@ This is expected behavior for high-confidence detection. Presidio errs on the si
 1. **Increase timeout values:**
    ```python
    response = requests.post(
-       "https://api.aptly.dev/v1/chat/completions",
+       "https://api-aptly.nsquaredlabs.com/v1/chat/completions",
        timeout=30  # Default is too low for LLM requests
    )
    ```
@@ -439,13 +439,13 @@ This is expected behavior for high-confidence detection. Presidio errs on the si
 2. **Check network connectivity:**
    ```bash
    # Test basic connectivity
-   curl https://api.aptly.dev/v1/health
+   curl https://api-aptly.nsquaredlabs.com/v1/health
 
    # Check DNS resolution
-   nslookup api.aptly.dev
+   nslookup api-aptly.nsquaredlabs.com
 
    # Test with verbose output
-   curl -v https://api.aptly.dev/v1/health
+   curl -v https://api-aptly.nsquaredlabs.com/v1/health
    ```
 
 3. **Firewall/proxy issues:**
@@ -466,7 +466,7 @@ pip install --upgrade certifi
 # If behind corporate proxy with custom CA
 import requests
 response = requests.post(
-    "https://api.aptly.dev/v1/chat/completions",
+    "https://api-aptly.nsquaredlabs.com/v1/chat/completions",
     verify='/path/to/corporate-ca-bundle.crt'
 )
 ```
@@ -483,7 +483,7 @@ response = requests.post(
 
 1. **Check response headers:**
    ```bash
-   curl -w "\nTime: %{time_total}s\n" https://api.aptly.dev/v1/health
+   curl -w "\nTime: %{time_total}s\n" https://api-aptly.nsquaredlabs.com/v1/health
    ```
 
 2. **Identify bottleneck:**
@@ -499,7 +499,7 @@ response = requests.post(
 
     ```python
     response = requests.post(
-        "https://api.aptly.dev/v1/chat/completions",
+        "https://api-aptly.nsquaredlabs.com/v1/chat/completions",
         json={"stream": True, ...},  # ✅ Faster perceived performance
         stream=True
     )
@@ -544,7 +544,7 @@ http_client.HTTPConnection.debuglevel = 1
 logging.basicConfig(level=logging.DEBUG)
 
 # Your request will now show detailed logs
-response = requests.post("https://api.aptly.dev/v1/chat/completions", ...)
+response = requests.post("https://api-aptly.nsquaredlabs.com/v1/chat/completions", ...)
 ```
 
 ### 4. Contact Support

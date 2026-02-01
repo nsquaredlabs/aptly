@@ -53,7 +53,7 @@ Get a list of all active (non-revoked) API keys associated with your customer ac
 <CodeGroup>
 
 ```bash cURL
-curl "https://api.aptly.dev/v1/api-keys" \
+curl "https://api-aptly.nsquaredlabs.com/v1/api-keys" \
   -H "Authorization: Bearer apt_live_xyz789"
 ```
 
@@ -61,7 +61,7 @@ curl "https://api.aptly.dev/v1/api-keys" \
 import requests
 
 response = requests.get(
-    "https://api.aptly.dev/v1/api-keys",
+    "https://api-aptly.nsquaredlabs.com/v1/api-keys",
     headers={"Authorization": "Bearer apt_live_xyz789"}
 )
 
@@ -76,7 +76,7 @@ for key in result['api_keys']:
 ```
 
 ```javascript JavaScript
-const response = await fetch('https://api.aptly.dev/v1/api-keys', {
+const response = await fetch('https://api-aptly.nsquaredlabs.com/v1/api-keys', {
   headers: {
     'Authorization': 'Bearer apt_live_xyz789'
   }
@@ -144,7 +144,7 @@ from datetime import datetime, timedelta, timezone
 def audit_api_keys(api_key):
     """Audit API keys and identify stale ones."""
     response = requests.get(
-        "https://api.aptly.dev/v1/api-keys",
+        "https://api-aptly.nsquaredlabs.com/v1/api-keys",
         headers={"Authorization": f"Bearer {api_key}"}
     )
     result = response.json()
@@ -184,7 +184,7 @@ Match a key prefix to identify which key is being used:
 def find_key_by_prefix(api_key, prefix):
     """Find a key by its prefix."""
     response = requests.get(
-        "https://api.aptly.dev/v1/api-keys",
+        "https://api-aptly.nsquaredlabs.com/v1/api-keys",
         headers={"Authorization": f"Bearer {api_key}"}
     )
     result = response.json()
@@ -211,7 +211,7 @@ Organize keys by environment based on naming:
 def list_keys_by_environment(api_key):
     """Categorize keys by environment based on name."""
     response = requests.get(
-        "https://api.aptly.dev/v1/api-keys",
+        "https://api-aptly.nsquaredlabs.com/v1/api-keys",
         headers={"Authorization": f"Bearer {api_key}"}
     )
     result = response.json()
@@ -252,7 +252,7 @@ Create a dashboard showing key usage:
 def key_usage_dashboard(api_key):
     """Display a dashboard of API key usage."""
     response = requests.get(
-        "https://api.aptly.dev/v1/api-keys",
+        "https://api-aptly.nsquaredlabs.com/v1/api-keys",
         headers={"Authorization": f"Bearer {api_key}"}
     )
     result = response.json()

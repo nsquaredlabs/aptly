@@ -33,7 +33,7 @@ Returns **204 No Content** on successful revocation (empty response body).
 <CodeGroup>
 
 ```bash cURL
-curl -X DELETE "https://api.aptly.dev/v1/api-keys/key_abc123" \
+curl -X DELETE "https://api-aptly.nsquaredlabs.com/v1/api-keys/key_abc123" \
   -H "Authorization: Bearer apt_live_xyz789"
 ```
 
@@ -43,7 +43,7 @@ import requests
 key_id_to_revoke = "key_abc123"
 
 response = requests.delete(
-    f"https://api.aptly.dev/v1/api-keys/{key_id_to_revoke}",
+    f"https://api-aptly.nsquaredlabs.com/v1/api-keys/{key_id_to_revoke}",
     headers={"Authorization": "Bearer apt_live_xyz789"}
 )
 
@@ -57,7 +57,7 @@ else:
 const keyIdToRevoke = 'key_abc123';
 
 const response = await fetch(
-  `https://api.aptly.dev/v1/api-keys/${keyIdToRevoke}`,
+  `https://api-aptly.nsquaredlabs.com/v1/api-keys/${keyIdToRevoke}`,
   {
     method: 'DELETE',
     headers: {
@@ -129,7 +129,7 @@ def revoke_compromised_key(current_api_key, compromised_key_id):
     """
     # First, create a replacement key
     create_response = requests.post(
-        "https://api.aptly.dev/v1/api-keys",
+        "https://api-aptly.nsquaredlabs.com/v1/api-keys",
         headers={"Authorization": f"Bearer {current_api_key}"},
         json={"name": f"Replacement for {compromised_key_id}"}
     )
@@ -145,7 +145,7 @@ def revoke_compromised_key(current_api_key, compromised_key_id):
 
     # Now revoke the compromised key
     revoke_response = requests.delete(
-        f"https://api.aptly.dev/v1/api-keys/{compromised_key_id}",
+        f"https://api-aptly.nsquaredlabs.com/v1/api-keys/{compromised_key_id}",
         headers={"Authorization": f"Bearer {current_api_key}"}
     )
 
@@ -177,7 +177,7 @@ def revoke_inactive_keys(current_api_key, days_inactive=90):
     """Revoke keys that haven't been used in X days."""
     # Get all keys
     list_response = requests.get(
-        "https://api.aptly.dev/v1/api-keys",
+        "https://api-aptly.nsquaredlabs.com/v1/api-keys",
         headers={"Authorization": f"Bearer {current_api_key}"}
     )
     all_keys = list_response.json()['api_keys']
@@ -219,7 +219,7 @@ def revoke_inactive_keys(current_api_key, days_inactive=90):
     revoked_count = 0
     for key in inactive_keys:
         response = requests.delete(
-            f"https://api.aptly.dev/v1/api-keys/{key['id']}",
+            f"https://api-aptly.nsquaredlabs.com/v1/api-keys/{key['id']}",
             headers={"Authorization": f"Bearer {current_api_key}"}
         )
 
@@ -244,7 +244,7 @@ def revoke_keys_by_pattern(current_api_key, pattern):
     """Revoke all keys whose names contain a specific pattern."""
     # Get all keys
     response = requests.get(
-        "https://api.aptly.dev/v1/api-keys",
+        "https://api-aptly.nsquaredlabs.com/v1/api-keys",
         headers={"Authorization": f"Bearer {current_api_key}"}
     )
     all_keys = response.json()['api_keys']
@@ -272,7 +272,7 @@ def revoke_keys_by_pattern(current_api_key, pattern):
     # Revoke each
     for key in matching_keys:
         response = requests.delete(
-            f"https://api.aptly.dev/v1/api-keys/{key['id']}",
+            f"https://api-aptly.nsquaredlabs.com/v1/api-keys/{key['id']}",
             headers={"Authorization": f"Bearer {current_api_key}"}
         )
 
@@ -294,7 +294,7 @@ def safe_revoke_key(current_api_key, key_id_to_revoke):
     """Safely revoke a key with verification steps."""
     # Step 1: Get the key details
     list_response = requests.get(
-        "https://api.aptly.dev/v1/api-keys",
+        "https://api-aptly.nsquaredlabs.com/v1/api-keys",
         headers={"Authorization": f"Bearer {current_api_key}"}
     )
     all_keys = list_response.json()['api_keys']
@@ -331,7 +331,7 @@ def safe_revoke_key(current_api_key, key_id_to_revoke):
 
     # Step 4: Revoke
     response = requests.delete(
-        f"https://api.aptly.dev/v1/api-keys/{key_id_to_revoke}",
+        f"https://api-aptly.nsquaredlabs.com/v1/api-keys/{key_id_to_revoke}",
         headers={"Authorization": f"Bearer {current_api_key}"}
     )
 

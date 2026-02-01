@@ -38,7 +38,7 @@ The Admin Secret is a server-side environment variable (`APTLY_ADMIN_SECRET`) us
 Pass it via the `X-Admin-Secret` header:
 
 ```bash
-curl -X POST https://api.aptly.dev/v1/admin/customers \
+curl -X POST https://api-aptly.nsquaredlabs.com/v1/admin/customers \
   -H "X-Admin-Secret: your-admin-secret" \
   -H "Content-Type: application/json" \
   -d '{"email": "user@company.com", "company_name": "Company Inc"}'
@@ -62,7 +62,7 @@ Once a customer is created, they receive an API key in the format `apt_live_*` o
 Pass via the `Authorization` header with Bearer scheme:
 
 ```bash
-curl -X POST https://api.aptly.dev/v1/chat/completions \
+curl -X POST https://api-aptly.nsquaredlabs.com/v1/chat/completions \
   -H "Authorization: Bearer apt_live_7a8b9c0d1e2f3g4h5i6j7k8l9m0n1o2p" \
   -H "Content-Type: application/json" \
   -d '{...}'
@@ -161,7 +161,7 @@ sequenceDiagram
   <Accordion title="Revocation">
     Customers can revoke keys at any time:
     ```bash
-    curl -X DELETE https://api.aptly.dev/v1/api-keys/{key_id} \
+    curl -X DELETE https://api-aptly.nsquaredlabs.com/v1/api-keys/{key_id} \
       -H "Authorization: Bearer apt_live_..."
     ```
     Revoked keys are marked in database but not deleted (audit trail).
@@ -176,7 +176,7 @@ Customers can create multiple API keys for different environments or application
 
 <CodeGroup>
 ```bash cURL
-curl -X POST https://api.aptly.dev/v1/api-keys \
+curl -X POST https://api-aptly.nsquaredlabs.com/v1/api-keys \
   -H "Authorization: Bearer apt_live_..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -189,7 +189,7 @@ curl -X POST https://api.aptly.dev/v1/api-keys \
 import requests
 
 response = requests.post(
-    "https://api.aptly.dev/v1/api-keys",
+    "https://api-aptly.nsquaredlabs.com/v1/api-keys",
     headers={
         "Authorization": "Bearer apt_live_...",
         "Content-Type": "application/json"
@@ -225,7 +225,7 @@ Response:
 View all keys for your account (without revealing the full key):
 
 ```bash
-curl https://api.aptly.dev/v1/api-keys \
+curl https://api-aptly.nsquaredlabs.com/v1/api-keys \
   -H "Authorization: Bearer apt_live_..."
 ```
 
@@ -260,7 +260,7 @@ Response:
 Revoke a key to immediately prevent its use:
 
 ```bash
-curl -X DELETE https://api.aptly.dev/v1/api-keys/key_abc456 \
+curl -X DELETE https://api-aptly.nsquaredlabs.com/v1/api-keys/key_abc456 \
   -H "Authorization: Bearer apt_live_..."
 ```
 
@@ -392,7 +392,7 @@ See the [Rate Limiting Guide](/guides/rate-limiting) for more details.
   <Accordion title="How do I test authentication without creating a customer?">
     Use the health endpoint, which doesn't require authentication:
     ```bash
-    curl https://api.aptly.dev/v1/health
+    curl https://api-aptly.nsquaredlabs.com/v1/health
     ```
   </Accordion>
 

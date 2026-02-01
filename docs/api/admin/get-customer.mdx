@@ -111,7 +111,7 @@ Get comprehensive details about a customer, including their profile, all API key
 <CodeGroup>
 
 ```bash cURL
-curl "https://api.aptly.dev/v1/admin/customers/cus_abc123" \
+curl "https://api-aptly.nsquaredlabs.com/v1/admin/customers/cus_abc123" \
   -H "X-Admin-Secret: your-admin-secret"
 ```
 
@@ -121,7 +121,7 @@ import requests
 customer_id = "cus_abc123"
 
 response = requests.get(
-    f"https://api.aptly.dev/v1/admin/customers/{customer_id}",
+    f"https://api-aptly.nsquaredlabs.com/v1/admin/customers/{customer_id}",
     headers={"X-Admin-Secret": "your-admin-secret"}
 )
 
@@ -138,7 +138,7 @@ print(f"Tokens this month: {result['usage']['tokens_this_month']}")
 const customerId = 'cus_abc123';
 
 const response = await fetch(
-  `https://api.aptly.dev/v1/admin/customers/${customerId}`,
+  `https://api-aptly.nsquaredlabs.com/v1/admin/customers/${customerId}`,
   {
     headers: {
       'X-Admin-Secret': 'your-admin-secret'
@@ -238,7 +238,7 @@ from datetime import datetime
 
 def get_customer_summary(customer_id, admin_secret):
     response = requests.get(
-        f"https://api.aptly.dev/v1/admin/customers/{customer_id}",
+        f"https://api-aptly.nsquaredlabs.com/v1/admin/customers/{customer_id}",
         headers={"X-Admin-Secret": admin_secret}
     )
     result = response.json()
@@ -289,7 +289,7 @@ def audit_inactive_keys(customer_id, admin_secret):
     from datetime import datetime, timedelta, timezone
 
     response = requests.get(
-        f"https://api.aptly.dev/v1/admin/customers/{customer_id}",
+        f"https://api-aptly.nsquaredlabs.com/v1/admin/customers/{customer_id}",
         headers={"X-Admin-Secret": admin_secret}
     )
     result = response.json()
@@ -328,7 +328,7 @@ Monitor customer usage and send alerts:
 def check_usage_limits(customer_id, admin_secret, alert_threshold=80):
     """Alert if customer is approaching their usage limits."""
     response = requests.get(
-        f"https://api.aptly.dev/v1/admin/customers/{customer_id}",
+        f"https://api-aptly.nsquaredlabs.com/v1/admin/customers/{customer_id}",
         headers={"X-Admin-Secret": admin_secret}
     )
     result = response.json()
@@ -362,7 +362,7 @@ import json
 def export_customer_report(customer_id, admin_secret, filename):
     """Export detailed customer report to JSON."""
     response = requests.get(
-        f"https://api.aptly.dev/v1/admin/customers/{customer_id}",
+        f"https://api-aptly.nsquaredlabs.com/v1/admin/customers/{customer_id}",
         headers={"X-Admin-Secret": admin_secret}
     )
     result = response.json()

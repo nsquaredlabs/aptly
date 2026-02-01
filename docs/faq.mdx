@@ -41,7 +41,7 @@ If you're handling sensitive data and want to use LLMs, Aptly ensures you stay c
 
 **Both!**
 
-- **Hosted (Recommended):** Use `api.aptly.dev` - no infrastructure to manage
+- **Hosted (Recommended):** Use `api-aptly.nsquaredlabs.com` - no infrastructure to manage
 - **Self-Hosted:** Deploy to your own infrastructure for maximum control
 
 See the [Production Deployment Guide](/deployment/production) for self-hosting instructions.
@@ -86,7 +86,7 @@ Contact sales@aptly.dev to request a trial. We typically offer:
 
 ```python
 response = requests.post(
-    "https://api.aptly.dev/v1/chat/completions",
+    "https://api-aptly.nsquaredlabs.com/v1/chat/completions",
     json={
         "model": "gpt-4",
         "api_keys": {"openai": "sk-..."}  # Passed per-request, never stored
@@ -154,7 +154,7 @@ See the [Chat Completions API](/api/chat-completions) for model examples.
 
 ```python
 response = requests.post(
-    "https://api.aptly.dev/v1/chat/completions",
+    "https://api-aptly.nsquaredlabs.com/v1/chat/completions",
     json={"stream": True, ...},
     stream=True
 )
@@ -175,7 +175,7 @@ import openai
 
 client = openai.OpenAI(
     api_key="apt_live_...",  # Your Aptly key
-    base_url="https://api.aptly.dev/v1"
+    base_url="https://api-aptly.nsquaredlabs.com/v1"
 )
 
 response = client.chat.completions.create(
@@ -229,7 +229,7 @@ Aptly only returns detections with confidence > 50% by default. Some false posit
 
 ```python
 response = requests.post(
-    "https://api.aptly.dev/v1/chat/completions",
+    "https://api-aptly.nsquaredlabs.com/v1/chat/completions",
     json={
         "model": "ft:gpt-3.5-turbo-0613:your-org::abc123",  # Fine-tuned model
         "api_keys": {"openai": "sk-..."}
@@ -286,7 +286,7 @@ This ensures compliance with audit requirements.
 
 ```bash
 # Export logs for a date range
-curl "https://api.aptly.dev/v1/logs?start_time=2026-01-01T00:00:00Z&limit=1000" \
+curl "https://api-aptly.nsquaredlabs.com/v1/logs?start_time=2026-01-01T00:00:00Z&limit=1000" \
   -H "Authorization: Bearer $APTLY_API_KEY" > audit_logs.json
 ```
 
@@ -322,7 +322,7 @@ response = openai.ChatCompletion.create(
 import openai
 client = openai.OpenAI(
     api_key="apt_live_...",
-    base_url="https://api.aptly.dev/v1"
+    base_url="https://api-aptly.nsquaredlabs.com/v1"
 )
 response = client.chat.completions.create(
     model="gpt-4",
@@ -336,7 +336,7 @@ response = client.chat.completions.create(
 **Yes.** Use test API keys (`apt_test_*`) in a staging environment:
 
 1. Get a test API key from your Aptly admin
-2. Point staging to `api.aptly.dev`
+2. Point staging to `api-aptly.nsquaredlabs.com`
 3. Test with real requests
 4. Monitor audit logs to verify PII redaction
 5. Switch production when ready
@@ -390,7 +390,7 @@ Increase your client timeout:
 
 ```python
 response = requests.post(
-    "https://api.aptly.dev/v1/chat/completions",
+    "https://api-aptly.nsquaredlabs.com/v1/chat/completions",
     json={"stream": True, ...},
     stream=True,
     timeout=300  # 5 minutes
@@ -407,7 +407,7 @@ See the [Troubleshooting Guide](/troubleshooting#streaming-issues) for more solu
 
 1. **Via API:**
    ```bash
-   curl https://api.aptly.dev/v1/me \
+   curl https://api-aptly.nsquaredlabs.com/v1/me \
      -H "Authorization: Bearer $APTLY_API_KEY"
    ```
 

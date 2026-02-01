@@ -131,7 +131,7 @@ Retrieve paginated audit logs with optional filtering by date range, user ID, an
 <CodeGroup>
 
 ```bash cURL
-curl "https://api.aptly.dev/v1/logs?limit=10" \
+curl "https://api-aptly.nsquaredlabs.com/v1/logs?limit=10" \
   -H "Authorization: Bearer apt_live_xyz789"
 ```
 
@@ -139,7 +139,7 @@ curl "https://api.aptly.dev/v1/logs?limit=10" \
 import requests
 
 response = requests.get(
-    "https://api.aptly.dev/v1/logs",
+    "https://api-aptly.nsquaredlabs.com/v1/logs",
     headers={"Authorization": "Bearer apt_live_xyz789"},
     params={"limit": 10}
 )
@@ -159,7 +159,7 @@ for log in result['logs']:
 
 ```javascript JavaScript
 const response = await fetch(
-  'https://api.aptly.dev/v1/logs?limit=10',
+  'https://api-aptly.nsquaredlabs.com/v1/logs?limit=10',
   {
     headers: {
       'Authorization': 'Bearer apt_live_xyz789'
@@ -189,7 +189,7 @@ end_date = datetime.now()
 start_date = end_date - timedelta(days=7)
 
 response = requests.get(
-    "https://api.aptly.dev/v1/logs",
+    "https://api-aptly.nsquaredlabs.com/v1/logs",
     headers={"Authorization": "Bearer apt_live_xyz789"},
     params={
         "start_date": start_date.strftime("%Y-%m-%d"),
@@ -206,7 +206,7 @@ print(f"Found {result['pagination']['total']} logs in the last 7 days")
 
 ```python
 response = requests.get(
-    "https://api.aptly.dev/v1/logs",
+    "https://api-aptly.nsquaredlabs.com/v1/logs",
     headers={"Authorization": "Bearer apt_live_xyz789"},
     params={
         "model": "gpt-4",
@@ -222,7 +222,7 @@ print(f"GPT-4 requests: {result['pagination']['total']}")
 
 ```python
 response = requests.get(
-    "https://api.aptly.dev/v1/logs",
+    "https://api-aptly.nsquaredlabs.com/v1/logs",
     headers={"Authorization": "Bearer apt_live_xyz789"},
     params={
         "user_id": "user_123",
@@ -311,7 +311,7 @@ def generate_monthly_report(api_key, year, month):
 
     while True:
         response = requests.get(
-            "https://api.aptly.dev/v1/logs",
+            "https://api-aptly.nsquaredlabs.com/v1/logs",
             headers={"Authorization": f"Bearer {api_key}"},
             params={
                 "start_date": start_date,
@@ -380,7 +380,7 @@ def analyze_pii_detection(api_key, days=30):
 
     # Fetch logs
     response = requests.get(
-        "https://api.aptly.dev/v1/logs",
+        "https://api-aptly.nsquaredlabs.com/v1/logs",
         headers={"Authorization": f"Bearer {api_key}"},
         params={
             "start_date": start_date.isoformat(),
@@ -424,7 +424,7 @@ def track_user_costs(api_key, start_date, end_date):
     page = 1
     while True:
         response = requests.get(
-            "https://api.aptly.dev/v1/logs",
+            "https://api-aptly.nsquaredlabs.com/v1/logs",
             headers={"Authorization": f"Bearer {api_key}"},
             params={
                 "start_date": start_date,
@@ -474,7 +474,7 @@ def export_logs_to_csv(api_key, start_date, end_date, filename="audit_logs.csv")
     # Fetch all logs
     while True:
         response = requests.get(
-            "https://api.aptly.dev/v1/logs",
+            "https://api-aptly.nsquaredlabs.com/v1/logs",
             headers={"Authorization": f"Bearer {api_key}"},
             params={
                 "start_date": start_date,
@@ -519,7 +519,7 @@ def fetch_all_logs(api_key, **filters):
 
     while True:
         response = requests.get(
-            "https://api.aptly.dev/v1/logs",
+            "https://api-aptly.nsquaredlabs.com/v1/logs",
             headers={"Authorization": f"Bearer {api_key}"},
             params={**filters, "page": page, "limit": 100}
         )

@@ -79,7 +79,7 @@ Get comprehensive information about your customer account including profile deta
 <CodeGroup>
 
 ```bash cURL
-curl "https://api.aptly.dev/v1/me" \
+curl "https://api-aptly.nsquaredlabs.com/v1/me" \
   -H "Authorization: Bearer apt_live_xyz789"
 ```
 
@@ -87,7 +87,7 @@ curl "https://api.aptly.dev/v1/me" \
 import requests
 
 response = requests.get(
-    "https://api.aptly.dev/v1/me",
+    "https://api-aptly.nsquaredlabs.com/v1/me",
     headers={"Authorization": "Bearer apt_live_xyz789"}
 )
 
@@ -104,7 +104,7 @@ print(f"Current Hour: {profile['usage']['requests_this_hour']} requests")
 ```
 
 ```javascript JavaScript
-const response = await fetch('https://api.aptly.dev/v1/me', {
+const response = await fetch('https://api-aptly.nsquaredlabs.com/v1/me', {
   headers: {
     'Authorization': 'Bearer apt_live_xyz789'
   }
@@ -165,7 +165,7 @@ from datetime import datetime
 def display_usage_dashboard(api_key):
     """Display a comprehensive usage dashboard."""
     response = requests.get(
-        "https://api.aptly.dev/v1/me",
+        "https://api-aptly.nsquaredlabs.com/v1/me",
         headers={"Authorization": f"Bearer {api_key}"}
     )
     profile = response.json()
@@ -210,7 +210,7 @@ Check if you're approaching your rate limit:
 def check_rate_limit_status(api_key):
     """Check current rate limit status."""
     response = requests.get(
-        "https://api.aptly.dev/v1/me",
+        "https://api-aptly.nsquaredlabs.com/v1/me",
         headers={"Authorization": f"Bearer {api_key}"}
     )
     profile = response.json()
@@ -253,7 +253,7 @@ def estimate_monthly_cost(api_key, cost_per_1k_tokens=0.01):
         cost_per_1k_tokens: Cost per 1000 tokens from your LLM provider
     """
     response = requests.get(
-        "https://api.aptly.dev/v1/me",
+        "https://api-aptly.nsquaredlabs.com/v1/me",
         headers={"Authorization": f"Bearer {api_key}"}
     )
     profile = response.json()
@@ -286,7 +286,7 @@ def verify_compliance_settings(api_key, required_frameworks):
         required_frameworks: List of required frameworks (e.g., ["HIPAA"])
     """
     response = requests.get(
-        "https://api.aptly.dev/v1/me",
+        "https://api-aptly.nsquaredlabs.com/v1/me",
         headers={"Authorization": f"Bearer {api_key}"}
     )
     profile = response.json()
@@ -325,7 +325,7 @@ import json
 def export_profile(api_key, filename="aptly_profile.json"):
     """Export profile to JSON file."""
     response = requests.get(
-        "https://api.aptly.dev/v1/me",
+        "https://api-aptly.nsquaredlabs.com/v1/me",
         headers={"Authorization": f"Bearer {api_key}"}
     )
     profile = response.json()

@@ -118,7 +118,7 @@ This endpoint creates a new customer in the Aptly system and automatically gener
 <CodeGroup>
 
 ```bash cURL
-curl -X POST https://api.aptly.dev/v1/admin/customers \
+curl -X POST https://api-aptly.nsquaredlabs.com/v1/admin/customers \
   -H "X-Admin-Secret: your-admin-secret" \
   -H "Content-Type: application/json" \
   -d '{
@@ -133,7 +133,7 @@ curl -X POST https://api.aptly.dev/v1/admin/customers \
 import requests
 
 response = requests.post(
-    "https://api.aptly.dev/v1/admin/customers",
+    "https://api-aptly.nsquaredlabs.com/v1/admin/customers",
     headers={
         "X-Admin-Secret": "your-admin-secret",
         "Content-Type": "application/json"
@@ -156,7 +156,7 @@ print(f"Customer created! API Key: {api_key}")
 ```
 
 ```javascript JavaScript
-const response = await fetch('https://api.aptly.dev/v1/admin/customers', {
+const response = await fetch('https://api-aptly.nsquaredlabs.com/v1/admin/customers', {
   method: 'POST',
   headers: {
     'X-Admin-Secret': 'your-admin-secret',
@@ -303,7 +303,7 @@ import requests
 def create_aptly_customer(email, company_name, plan):
     try:
         response = requests.post(
-            "https://api.aptly.dev/v1/admin/customers",
+            "https://api-aptly.nsquaredlabs.com/v1/admin/customers",
             headers={
                 "X-Admin-Secret": os.getenv("APTLY_ADMIN_SECRET"),
                 "Content-Type": "application/json"
@@ -342,7 +342,7 @@ ADMIN_SECRET = os.getenv("APTLY_ADMIN_SECRET")
 
 def create_customer(email, company, plan):
     response = requests.post(
-        "https://api.aptly.dev/v1/admin/customers",
+        "https://api-aptly.nsquaredlabs.com/v1/admin/customers",
         headers={"X-Admin-Secret": ADMIN_SECRET},
         json={
             "email": email,

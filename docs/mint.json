@@ -119,7 +119,7 @@
     "twitter": "https://twitter.com/aptly"
   },
   "api": {
-    "baseUrl": "https://api.aptly.dev",
+    "baseUrl": "https://api-aptly.nsquaredlabs.com",
     "playground": {
       "mode": "simple"
     }

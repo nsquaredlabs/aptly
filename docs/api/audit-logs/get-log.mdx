@@ -121,7 +121,7 @@ Get comprehensive details for a single audit log entry, including the original a
 <CodeGroup>
 
 ```bash cURL
-curl "https://api.aptly.dev/v1/logs/log_abc123" \
+curl "https://api-aptly.nsquaredlabs.com/v1/logs/log_abc123" \
   -H "Authorization: Bearer apt_live_xyz789"
 ```
 
@@ -131,7 +131,7 @@ import requests
 log_id = "log_abc123"
 
 response = requests.get(
-    f"https://api.aptly.dev/v1/logs/{log_id}",
+    f"https://api-aptly.nsquaredlabs.com/v1/logs/{log_id}",
     headers={"Authorization": "Bearer apt_live_xyz789"}
 )
 
@@ -155,7 +155,7 @@ print(f"Duration: {log['duration_ms']}ms")
 const logId = 'log_abc123';
 
 const response = await fetch(
-  `https://api.aptly.dev/v1/logs/${logId}`,
+  `https://api-aptly.nsquaredlabs.com/v1/logs/${logId}`,
   {
     headers: {
       'Authorization': 'Bearer apt_live_xyz789'
@@ -253,7 +253,7 @@ import requests
 def audit_pii_redaction(api_key, log_id):
     """Review PII redaction for a specific request."""
     response = requests.get(
-        f"https://api.aptly.dev/v1/logs/{log_id}",
+        f"https://api-aptly.nsquaredlabs.com/v1/logs/{log_id}",
         headers={"Authorization": f"Bearer {api_key}"}
     )
     log = response.json()
@@ -305,7 +305,7 @@ Generate a compliance report for a specific request:
 def generate_compliance_report(api_key, log_id):
     """Generate compliance report for a request."""
     response = requests.get(
-        f"https://api.aptly.dev/v1/logs/{log_id}",
+        f"https://api-aptly.nsquaredlabs.com/v1/logs/{log_id}",
         headers={"Authorization": f"Bearer {api_key}"}
     )
     log = response.json()
@@ -354,7 +354,7 @@ Side-by-side comparison:
 def compare_messages(api_key, log_id):
     """Compare original and redacted messages."""
     response = requests.get(
-        f"https://api.aptly.dev/v1/logs/{log_id}",
+        f"https://api-aptly.nsquaredlabs.com/v1/logs/{log_id}",
         headers={"Authorization": f"Bearer {api_key}"}
     )
     log = response.json()
@@ -382,7 +382,7 @@ Analyze PII detection patterns:
 def extract_pii_statistics(api_key, log_id):
     """Extract statistics about PII detection."""
     response = requests.get(
-        f"https://api.aptly.dev/v1/logs/{log_id}",
+        f"https://api-aptly.nsquaredlabs.com/v1/logs/{log_id}",
         headers={"Authorization": f"Bearer {api_key}"}
     )
     log = response.json()
@@ -422,7 +422,7 @@ Investigate errors:
 def debug_failed_request(api_key, log_id):
     """Debug a failed request."""
     response = requests.get(
-        f"https://api.aptly.dev/v1/logs/{log_id}",
+        f"https://api-aptly.nsquaredlabs.com/v1/logs/{log_id}",
         headers={"Authorization": f"Bearer {api_key}"}
     )
     log = response.json()
