@@ -1,0 +1,127 @@
+{
+  "name": "Aptly",
+  "logo": {
+    "dark": "/logo/dark.svg",
+    "light": "/logo/light.svg"
+  },
+  "favicon": "/favicon.svg",
+  "colors": {
+    "primary": "#3b82f6",
+    "light": "#60a5fa",
+    "dark": "#2563eb",
+    "anchors": {
+      "from": "#3b82f6",
+      "to": "#2563eb"
+    }
+  },
+  "topbarLinks": [
+    {
+      "name": "GitHub",
+      "url": "https://github.com/your-org/aptly"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "Get Started",
+    "url": "https://aptly.dev"
+  },
+  "tabs": [
+    {
+      "name": "API Reference",
+      "url": "api"
+    },
+    {
+      "name": "Guides",
+      "url": "guides"
+    }
+  ],
+  "anchors": [
+    {
+      "name": "Community",
+      "icon": "discord",
+      "url": "https://discord.gg/aptly"
+    },
+    {
+      "name": "Blog",
+      "icon": "newspaper",
+      "url": "https://aptly.dev/blog"
+    }
+  ],
+  "navigation": [
+    {
+      "group": "Getting Started",
+      "pages": [
+        "introduction",
+        "quickstart",
+        "authentication"
+      ]
+    },
+    {
+      "group": "API Reference",
+      "pages": [
+        "api/health",
+        "api/chat-completions",
+        {
+          "group": "Admin Endpoints",
+          "pages": [
+            "api/admin/create-customer",
+            "api/admin/list-customers",
+            "api/admin/get-customer",
+            "api/admin/create-api-key"
+          ]
+        },
+        {
+          "group": "Customer Endpoints",
+          "pages": [
+            "api/customer/list-keys",
+            "api/customer/create-key",
+            "api/customer/revoke-key",
+            "api/customer/get-profile",
+            "api/customer/update-settings"
+          ]
+        },
+        {
+          "group": "Audit Logs",
+          "pages": [
+            "api/audit-logs/query-logs",
+            "api/audit-logs/get-log"
+          ]
+        }
+      ]
+    },
+    {
+      "group": "Guides",
+      "pages": [
+        "guides/pii-redaction",
+        "guides/compliance",
+        "guides/rate-limiting",
+        "guides/streaming"
+      ]
+    },
+    {
+      "group": "Deployment",
+      "pages": [
+        "deployment/architecture",
+        "deployment/production",
+        "deployment/local-development"
+      ]
+    },
+    {
+      "group": "Resources",
+      "pages": [
+        "troubleshooting",
+        "faq",
+        "changelog"
+      ]
+    }
+  ],
+  "footerSocials": {
+    "github": "https://github.com/your-org/aptly",
+    "twitter": "https://twitter.com/aptly"
+  },
+  "api": {
+    "baseUrl": "https://api.aptly.dev",
+    "playground": {
+      "mode": "simple"
+    }
+  }
+}

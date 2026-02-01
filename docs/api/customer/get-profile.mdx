@@ -1,0 +1,393 @@
+---
+title: "Get Profile"
+api: "GET /v1/me"
+description: "Retrieve your customer profile, settings, and usage statistics"
+---
+
+Get comprehensive information about your customer account including profile details, settings, and current usage statistics.
+
+## Authentication
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token with your Aptly API key: `Bearer apt_live_xxx` or `Bearer apt_test_xxx`
+</ParamField>
+
+## Response
+
+<ResponseField name="id" type="string" required>
+  Your unique customer identifier
+</ResponseField>
+
+<ResponseField name="email" type="string" required>
+  Your email address
+</ResponseField>
+
+<ResponseField name="company_name" type="string">
+  Your company or organization name
+</ResponseField>
+
+<ResponseField name="plan" type="string" required>
+  Your subscription plan: `free` or `pro`
+</ResponseField>
+
+<ResponseField name="compliance_frameworks" type="array" required>
+  List of compliance frameworks your account adheres to
+
+  Examples: `["HIPAA", "SOC2", "GDPR", "PCI-DSS"]`
+</ResponseField>
+
+<ResponseField name="retention_days" type="integer" required>
+  Audit log retention period in days (default: 2555 days / ~7 years)
+</ResponseField>
+
+<ResponseField name="pii_redaction_mode" type="string" required>
+  Current PII redaction mode: `mask`, `hash`, or `remove`
+
+  - **mask**: `"John Smith"` → `"PERSON_A"`
+  - **hash**: `"John Smith"` → `"HASH_a3f2c1b9"`
+  - **remove**: `"John Smith"` → `"[REDACTED]"`
+</ResponseField>
+
+<ResponseField name="created_at" type="string" required>
+  ISO 8601 timestamp of account creation
+</ResponseField>
+
+<ResponseField name="usage" type="object" required>
+  Current usage statistics
+
+  <Expandable title="usage">
+    <ResponseField name="requests_this_month" type="integer">
+      Total API requests this calendar month
+    </ResponseField>
+
+    <ResponseField name="tokens_this_month" type="integer">
+      Total tokens used this calendar month
+    </ResponseField>
+
+    <ResponseField name="rate_limit_per_hour" type="integer">
+      Current API key's rate limit (requests per hour)
+    </ResponseField>
+
+    <ResponseField name="requests_this_hour" type="integer">
+      Requests made in the current hour (resets every hour)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Example Requests
+
+<CodeGroup>
+
+```bash cURL
+curl "https://api.aptly.dev/v1/me" \
+  -H "Authorization: Bearer apt_live_xyz789"
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    "https://api.aptly.dev/v1/me",
+    headers={"Authorization": "Bearer apt_live_xyz789"}
+)
+
+profile = response.json()
+
+print(f"Customer: {profile['email']}")
+print(f"Plan: {profile['plan']}")
+print(f"PII Mode: {profile['pii_redaction_mode']}")
+print(f"\nUsage this month:")
+print(f"  Requests: {profile['usage']['requests_this_month']:,}")
+print(f"  Tokens: {profile['usage']['tokens_this_month']:,}")
+print(f"\nRate Limit: {profile['usage']['rate_limit_per_hour']}/hour")
+print(f"Current Hour: {profile['usage']['requests_this_hour']} requests")
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.aptly.dev/v1/me', {
+  headers: {
+    'Authorization': 'Bearer apt_live_xyz789'
+  }
+});
+
+const profile = await response.json();
+
+console.log(`Customer: ${profile.email}`);
+console.log(`Plan: ${profile.plan}`);
+console.log(`\nUsage this month:`);
+console.log(`  Requests: ${profile.usage.requests_this_month}`);
+console.log(`  Tokens: ${profile.usage.tokens_this_month}`);
+```
+
+</CodeGroup>
+
+## Response Example
+
+<ResponseExample>
+
+```json 200 - Success
+{
+  "id": "cus_abc123",
+  "email": "admin@company.com",
+  "company_name": "Acme Corporation",
+  "plan": "pro",
+  "compliance_frameworks": ["HIPAA", "SOC2"],
+  "retention_days": 2555,
+  "pii_redaction_mode": "mask",
+  "created_at": "2026-01-15T10:00:00Z",
+  "usage": {
+    "requests_this_month": 45230,
+    "tokens_this_month": 1250000,
+    "rate_limit_per_hour": 1000,
+    "requests_this_hour": 47
+  }
+}
+```
+
+```json 401 - Unauthorized
+{
+  "detail": "Invalid API key"
+}
+```
+
+</ResponseExample>
+
+## Use Cases
+
+### Usage Dashboard
+
+Build a dashboard showing your usage statistics:
+
+```python
+import requests
+from datetime import datetime
+
+def display_usage_dashboard(api_key):
+    """Display a comprehensive usage dashboard."""
+    response = requests.get(
+        "https://api.aptly.dev/v1/me",
+        headers={"Authorization": f"Bearer {api_key}"}
+    )
+    profile = response.json()
+
+    print("=" * 60)
+    print(f"APTLY USAGE DASHBOARD - {profile['company_name']}")
+    print("=" * 60)
+    print(f"\nAccount: {profile['email']}")
+    print(f"Plan: {profile['plan'].upper()}")
+    print(f"PII Mode: {profile['pii_redaction_mode']}")
+    print(f"Compliance: {', '.join(profile['compliance_frameworks'])}")
+
+    usage = profile['usage']
+    print(f"\n--- THIS MONTH ---")
+    print(f"Requests: {usage['requests_this_month']:,}")
+    print(f"Tokens: {usage['tokens_this_month']:,}")
+
+    print(f"\n--- CURRENT HOUR ---")
+    print(f"Requests: {usage['requests_this_hour']} / {usage['rate_limit_per_hour']}")
+
+    # Calculate percentage
+    hour_percent = (usage['requests_this_hour'] / usage['rate_limit_per_hour']) * 100
+    print(f"Usage: {hour_percent:.1f}%")
+
+    # Warning if approaching limit
+    if hour_percent > 80:
+        print(f"\n⚠ WARNING: Approaching rate limit!")
+    elif hour_percent > 90:
+        print(f"\n🚨 CRITICAL: Very close to rate limit!")
+
+    print("=" * 60)
+
+# Usage
+display_usage_dashboard("apt_live_xyz789")
+```
+
+### Monitor Rate Limit
+
+Check if you're approaching your rate limit:
+
+```python
+def check_rate_limit_status(api_key):
+    """Check current rate limit status."""
+    response = requests.get(
+        "https://api.aptly.dev/v1/me",
+        headers={"Authorization": f"Bearer {api_key}"}
+    )
+    profile = response.json()
+    usage = profile['usage']
+
+    limit = usage['rate_limit_per_hour']
+    current = usage['requests_this_hour']
+    remaining = limit - current
+    percent_used = (current / limit) * 100
+
+    print(f"Rate Limit Status:")
+    print(f"  Limit: {limit} requests/hour")
+    print(f"  Used: {current} requests ({percent_used:.1f}%)")
+    print(f"  Remaining: {remaining} requests")
+
+    if percent_used >= 90:
+        return "CRITICAL"
+    elif percent_used >= 75:
+        return "WARNING"
+    else:
+        return "OK"
+
+# Usage
+status = check_rate_limit_status("apt_live_xyz789")
+if status != "OK":
+    print(f"\n⚠ Status: {status}")
+```
+
+### Cost Estimation
+
+Estimate costs based on token usage:
+
+```python
+def estimate_monthly_cost(api_key, cost_per_1k_tokens=0.01):
+    """
+    Estimate monthly cost based on current usage.
+
+    Args:
+        api_key: Your Aptly API key
+        cost_per_1k_tokens: Cost per 1000 tokens from your LLM provider
+    """
+    response = requests.get(
+        "https://api.aptly.dev/v1/me",
+        headers={"Authorization": f"Bearer {api_key}"}
+    )
+    profile = response.json()
+
+    tokens_this_month = profile['usage']['tokens_this_month']
+    cost = (tokens_this_month / 1000) * cost_per_1k_tokens
+
+    print(f"Monthly Cost Estimate:")
+    print(f"  Tokens used: {tokens_this_month:,}")
+    print(f"  Cost per 1K tokens: ${cost_per_1k_tokens}")
+    print(f"  Estimated cost: ${cost:.2f}")
+
+    return cost
+
+# Usage
+cost = estimate_monthly_cost("apt_live_xyz789", cost_per_1k_tokens=0.01)
+```
+
+### Check Compliance Settings
+
+Verify your compliance configuration:
+
+```python
+def verify_compliance_settings(api_key, required_frameworks):
+    """
+    Verify that required compliance frameworks are enabled.
+
+    Args:
+        api_key: Your Aptly API key
+        required_frameworks: List of required frameworks (e.g., ["HIPAA"])
+    """
+    response = requests.get(
+        "https://api.aptly.dev/v1/me",
+        headers={"Authorization": f"Bearer {api_key}"}
+    )
+    profile = response.json()
+
+    enabled_frameworks = set(profile['compliance_frameworks'])
+    required_set = set(required_frameworks)
+
+    missing = required_set - enabled_frameworks
+    extra = enabled_frameworks - required_set
+
+    print(f"Compliance Check:")
+    print(f"  Required: {', '.join(required_frameworks)}")
+    print(f"  Enabled: {', '.join(enabled_frameworks)}")
+
+    if missing:
+        print(f"\n⚠ MISSING: {', '.join(missing)}")
+        print(f"  Action: Contact admin to enable these frameworks")
+        return False
+    else:
+        print(f"\n✓ All required frameworks enabled")
+        if extra:
+            print(f"  Additional: {', '.join(extra)}")
+        return True
+
+# Usage
+verify_compliance_settings("apt_live_xyz789", ["HIPAA", "SOC2"])
+```
+
+### Export Profile to JSON
+
+Export your profile for record-keeping:
+
+```python
+import json
+
+def export_profile(api_key, filename="aptly_profile.json"):
+    """Export profile to JSON file."""
+    response = requests.get(
+        "https://api.aptly.dev/v1/me",
+        headers={"Authorization": f"Bearer {api_key}"}
+    )
+    profile = response.json()
+
+    # Add export metadata
+    export_data = {
+        "exported_at": datetime.now().isoformat(),
+        "profile": profile
+    }
+
+    with open(filename, 'w') as f:
+        json.dump(export_data, f, indent=2)
+
+    print(f"✓ Profile exported to {filename}")
+
+# Usage
+export_profile("apt_live_xyz789")
+```
+
+## Understanding Usage Metrics
+
+### Monthly Statistics
+
+**requests_this_month** and **tokens_this_month** reset on the 1st of each calendar month at 00:00 UTC.
+
+These metrics track:
+- All successful requests to `/v1/chat/completions`
+- Total input + output tokens across all requests
+- Only completed requests (failed requests are not counted)
+
+### Hourly Rate Limit
+
+**requests_this_hour** resets every hour (e.g., at 10:00, 11:00, 12:00, etc.).
+
+The limit shown is for the **current API key** you're using. If you have multiple keys with different limits, each tracks separately.
+
+## PII Redaction Modes
+
+Your `pii_redaction_mode` setting controls how PII is redacted in requests:
+
+| Mode | Example | Use Case |
+|------|---------|----------|
+| **mask** | `PERSON_A`, `EMAIL_A` | Default, preserves context |
+| **hash** | `HASH_a3f2c1b9` | When you need consistency |
+| **remove** | `[REDACTED]` | Maximum privacy |
+
+See the [PII Redaction Guide](/guides/pii-redaction) for detailed examples.
+
+## Plan Information
+
+Your `plan` field shows your current subscription:
+
+- **free**: 100 requests/hour, basic features
+- **pro**: 1000 requests/hour, advanced features
+
+<Note>
+  Rate limits are per API key, not per account. If you have 3 keys, each has its own limit.
+</Note>
+
+## Related Endpoints
+
+- [Update Settings](/api/customer/update-settings) - Change PII mode or compliance frameworks
+- [List API Keys](/api/customer/list-keys) - View all your API keys
+- [Query Audit Logs](/api/audit-logs/query-logs) - View detailed usage history
+- [Chat Completions](/api/chat-completions) - The main API endpoint

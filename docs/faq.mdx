@@ -1,0 +1,487 @@
+---
+title: "FAQ"
+description: "Frequently asked questions about Aptly"
+---
+
+# Frequently Asked Questions
+
+## General Questions
+
+### What is Aptly?
+
+Aptly is a **compliance-as-a-service middleware** that sits between your application and LLM providers (OpenAI, Anthropic, Google, etc.). It automatically:
+- Detects and redacts PII before sending data to LLMs
+- Logs all requests to immutable audit trails
+- Routes requests to multiple LLM providers via a unified API
+- Enforces rate limits and compliance policies
+
+Think of it as a secure proxy for LLM APIs that adds compliance features without changing your code.
+
+### Who is Aptly for?
+
+Aptly is designed for organizations that need to use LLMs while maintaining compliance with:
+- **Healthcare (HIPAA):** Protect patient data
+- **Financial Services:** Secure transaction and account information
+- **Legal:** Safeguard client information
+- **Enterprise:** Meet data governance requirements
+
+If you're handling sensitive data and want to use LLMs, Aptly ensures you stay compliant.
+
+### How is Aptly different from directly using OpenAI/Anthropic?
+
+| Feature | Direct to OpenAI | Through Aptly |
+|---------|-----------------|---------------|
+| **PII Protection** | None - you send raw data | Automatic detection & redaction |
+| **Audit Logs** | Basic usage logs | Immutable compliance logs with full request/response |
+| **Multi-Provider** | One API per provider | Single API for all providers |
+| **Compliance** | Your responsibility | Built-in HIPAA/SOC2 features |
+| **API Keys** | Stored in your app | Never stored by Aptly (pass-through) |
+
+### Is Aptly a hosted service or self-hosted?
+
+**Both!**
+
+- **Hosted (Recommended):** Use `api.aptly.dev` - no infrastructure to manage
+- **Self-Hosted:** Deploy to your own infrastructure for maximum control
+
+See the [Production Deployment Guide](/deployment/production) for self-hosting instructions.
+
+---
+
+## Pricing & Plans
+
+### How much does Aptly cost?
+
+Contact sales@aptly.dev for pricing. Pricing is based on:
+- API request volume
+- Features required (PII redaction, audit logs, compliance frameworks)
+- Support level (standard vs. enterprise)
+
+**Note:** Aptly costs are **in addition** to your LLM provider costs (OpenAI, Anthropic, etc.).
+
+### Do I need to pay for LLM provider costs separately?
+
+**Yes.** Aptly doesn't charge for LLM usage - you use your own API keys and pay your providers directly.
+
+**Example cost breakdown:**
+- Aptly: $X per 1,000 requests (for PII detection, logging, compliance)
+- OpenAI: $0.01 per 1K tokens (standard GPT-4 pricing)
+
+You get compliance features without markup on LLM costs.
+
+### Is there a free trial?
+
+Contact sales@aptly.dev to request a trial. We typically offer:
+- 14-day free trial
+- Up to 10,000 API requests
+- Access to all features
+
+---
+
+## Security & Privacy
+
+### Does Aptly store my LLM provider API keys?
+
+**No, never.** You pass your OpenAI/Anthropic/Google API keys in each request:
+
+```python
+response = requests.post(
+    "https://api.aptly.dev/v1/chat/completions",
+    json={
+        "model": "gpt-4",
+        "api_keys": {"openai": "sk-..."}  # Passed per-request, never stored
+    }
+)
+```
+
+Aptly uses these keys to forward your request to the provider, then discards them immediately.
+
+### What data does Aptly store?
+
+Aptly stores:
+- ✅ **Audit logs** - Request/response data, PII detections, timestamps
+- ✅ **API keys** - Aptly API keys (hashed) for authentication
+- ✅ **Customer metadata** - Email, company name, settings
+- ❌ **LLM provider keys** - Never stored
+- ❌ **Unredacted PII** - Only stored in audit logs with strict access controls
+
+All data is encrypted at rest and in transit.
+
+### Is Aptly HIPAA compliant?
+
+**Yes.** Aptly is designed for HIPAA compliance:
+- PII detection covers PHI (Protected Health Information)
+- Immutable audit logs for compliance reporting
+- Encrypted data storage and transmission
+- Business Associate Agreement (BAA) available
+
+Contact sales@aptly.dev for BAA execution.
+
+### Where is data stored?
+
+- **Hosted version:** US-based cloud infrastructure (AWS/GCP)
+- **Self-hosted:** Your infrastructure (you control data location)
+
+For data residency requirements, contact us about regional deployments or self-hosting.
+
+### Can I use Aptly with on-premise LLMs?
+
+**Yes**, if you're self-hosting Aptly. Configure LiteLLM to point to your on-premise LLM endpoints.
+
+See [LiteLLM documentation](https://docs.litellm.ai/docs/) for custom provider configuration.
+
+---
+
+## Technical Questions
+
+### Which LLM providers does Aptly support?
+
+Aptly supports **all providers via LiteLLM**, including:
+- ✅ OpenAI (GPT-4, GPT-3.5-turbo, etc.)
+- ✅ Anthropic (Claude 3.5 Sonnet, Claude 3 Opus, etc.)
+- ✅ Google (Gemini Pro, Gemini Ultra)
+- ✅ Cohere (Command, Command-Light)
+- ✅ Together AI (Llama, Mixtral, etc.)
+- ✅ Azure OpenAI
+- ✅ AWS Bedrock
+- ✅ Any OpenAI-compatible API
+
+See the [Chat Completions API](/api/chat-completions) for model examples.
+
+### Does Aptly support streaming responses?
+
+**Yes!** Use `"stream": true` in your request:
+
+```python
+response = requests.post(
+    "https://api.aptly.dev/v1/chat/completions",
+    json={"stream": True, ...},
+    stream=True
+)
+
+for line in response.iter_lines():
+    if line:
+        print(line.decode('utf-8'))
+```
+
+See the [Streaming Guide](/guides/streaming) for details.
+
+### Can I use the OpenAI Python SDK with Aptly?
+
+**Yes!** Aptly is OpenAI-compatible:
+
+```python
+import openai
+
+client = openai.OpenAI(
+    api_key="apt_live_...",  # Your Aptly key
+    base_url="https://api.aptly.dev/v1"
+)
+
+response = client.chat.completions.create(
+    model="gpt-4",
+    messages=[{"role": "user", "content": "Hello"}],
+    extra_body={"api_keys": {"openai": "sk-..."}}
+)
+```
+
+The only difference is the `extra_body` parameter for LLM provider keys.
+
+### What PII does Aptly detect?
+
+Aptly uses **Microsoft Presidio** to detect:
+- Names (PERSON)
+- Email addresses (EMAIL_ADDRESS)
+- Phone numbers (PHONE_NUMBER)
+- Social Security Numbers (US_SSN)
+- Credit card numbers (CREDIT_CARD)
+- Passport numbers (US_PASSPORT)
+- Driver's license numbers (US_DRIVER_LICENSE)
+- Medical record numbers (MEDICAL_LICENSE)
+- IP addresses (IP_ADDRESS)
+- Addresses and locations (LOCATION)
+- Dates and times (DATE_TIME)
+- IBAN codes (IBAN_CODE)
+
+See the [PII Redaction Guide](/guides/pii-redaction) for the complete list.
+
+### Can I customize which PII types are detected?
+
+Currently, Aptly uses a fixed set of entity types. **Custom entity detection** is on our roadmap.
+
+For now, you can:
+- Use `pii_redaction_mode` to control how PII is redacted (`mask`, `hash`, `remove`)
+- Use `redact_response: false` to skip response scanning
+- Pre-process your data before sending to Aptly
+
+### How accurate is PII detection?
+
+Presidio's accuracy varies by entity type:
+- **High confidence (>95%):** SSN, credit cards, emails (with clear format)
+- **Medium confidence (80-95%):** Names, phone numbers, addresses
+- **Lower confidence (<80%):** Generic identifiers, ambiguous text
+
+Aptly only returns detections with confidence > 50% by default. Some false positives/negatives are expected.
+
+### Does Aptly support fine-tuned models?
+
+**Yes**, if your provider supports them. Pass the fine-tuned model ID:
+
+```python
+response = requests.post(
+    "https://api.aptly.dev/v1/chat/completions",
+    json={
+        "model": "ft:gpt-3.5-turbo-0613:your-org::abc123",  # Fine-tuned model
+        "api_keys": {"openai": "sk-..."}
+    }
+)
+```
+
+### What's the maximum request size?
+
+- **Message content:** 1 MB per request
+- **Total request payload:** 2 MB (including metadata)
+- **Token limits:** Depends on the model (e.g., GPT-4: 128K tokens)
+
+Larger requests may be rejected or truncated.
+
+### What are the rate limits?
+
+Rate limits depend on your plan:
+- **Starter:** 100 requests/hour
+- **Pro:** 1,000 requests/hour
+- **Enterprise:** Custom limits
+
+Check response headers for current usage:
+```
+X-RateLimit-Limit: 1000
+X-RateLimit-Remaining: 847
+X-RateLimit-Reset: 1706616000
+```
+
+---
+
+## Compliance & Audit Logs
+
+### How long are audit logs retained?
+
+- **Standard:** 90 days
+- **Pro:** 1 year
+- **Enterprise:** Custom retention (up to 7 years)
+
+Contact sales@aptly.dev to configure retention for your compliance needs.
+
+### Can audit logs be modified or deleted?
+
+**No.** Audit logs are **immutable** by design:
+- Database trigger prevents UPDATE and DELETE operations
+- Logs are append-only
+- Tampering attempts are logged and alerted
+
+This ensures compliance with audit requirements.
+
+### Can I export audit logs?
+
+**Yes.** Use the Audit Logs API:
+
+```bash
+# Export logs for a date range
+curl "https://api.aptly.dev/v1/logs?start_time=2026-01-01T00:00:00Z&limit=1000" \
+  -H "Authorization: Bearer $APTLY_API_KEY" > audit_logs.json
+```
+
+For bulk exports, contact support@aptly.dev about CSV or database dump options.
+
+### Do audit logs contain unredacted PII?
+
+**Yes.** Audit logs store:
+- Original message (with PII)
+- Redacted message (sent to LLM)
+- PII detections with locations
+
+This is required for compliance auditing. Access to audit logs is restricted to:
+- Customer admins (via API)
+- Aptly operations team (with strict access controls)
+
+---
+
+## Integration & Migration
+
+### How hard is it to migrate from direct OpenAI to Aptly?
+
+**Very easy** - usually < 1 hour:
+
+```python
+# Before
+response = openai.ChatCompletion.create(
+    model="gpt-4",
+    messages=[...]
+)
+
+# After - just change the base URL and add api_keys
+import openai
+client = openai.OpenAI(
+    api_key="apt_live_...",
+    base_url="https://api.aptly.dev/v1"
+)
+response = client.chat.completions.create(
+    model="gpt-4",
+    messages=[...],
+    extra_body={"api_keys": {"openai": "sk-..."}}
+)
+```
+
+### Can I test Aptly without changing production code?
+
+**Yes.** Use test API keys (`apt_test_*`) in a staging environment:
+
+1. Get a test API key from your Aptly admin
+2. Point staging to `api.aptly.dev`
+3. Test with real requests
+4. Monitor audit logs to verify PII redaction
+5. Switch production when ready
+
+### Does Aptly support webhooks or callbacks?
+
+**Not yet.** Webhooks are on the roadmap for:
+- Audit log notifications
+- Rate limit warnings
+- PII detection alerts
+
+Subscribe to updates at [updates.aptly.dev](https://updates.aptly.dev) *(coming soon)*.
+
+### Can I use Aptly in a mobile app?
+
+**Yes**, but follow best practices:
+- **Don't embed API keys** in mobile apps (easily extracted)
+- Use a **backend proxy** that holds the Aptly API key
+- Have your app call your backend, which calls Aptly
+
+```
+Mobile App → Your Backend (holds Aptly key) → Aptly → LLM Provider
+```
+
+This prevents key theft if the app is decompiled.
+
+---
+
+## Troubleshooting
+
+### My PII isn't being detected. Why?
+
+Common causes:
+- Text is obfuscated or non-standard format
+- Confidence score is below threshold (< 0.5)
+- Entity type isn't supported by Presidio
+
+See the [Troubleshooting Guide](/troubleshooting#pii-not-being-detected) for solutions.
+
+### I'm getting 429 rate limit errors. What do I do?
+
+1. Check response headers for limit and reset time
+2. Implement exponential backoff in your retry logic
+3. Contact support to increase limits or upgrade your plan
+
+See [Rate Limiting Guide](/guides/rate-limiting) for details.
+
+### Streaming responses are cutting off mid-sentence.
+
+Increase your client timeout:
+
+```python
+response = requests.post(
+    "https://api.aptly.dev/v1/chat/completions",
+    json={"stream": True, ...},
+    stream=True,
+    timeout=300  # 5 minutes
+)
+```
+
+See the [Troubleshooting Guide](/troubleshooting#streaming-issues) for more solutions.
+
+---
+
+## Billing & Usage
+
+### How do I track my usage?
+
+1. **Via API:**
+   ```bash
+   curl https://api.aptly.dev/v1/me \
+     -H "Authorization: Bearer $APTLY_API_KEY"
+   ```
+
+2. **Audit logs:** Query logs to count requests and calculate costs
+
+3. **Dashboard:** *(Coming soon)* - Web dashboard with usage analytics
+
+### Can I set spending limits?
+
+Not currently. Usage is controlled by:
+- Rate limits (prevents runaway costs)
+- Plan quotas (hard caps on requests/hour)
+
+**Enterprise plans** can configure custom alerts and limits.
+
+### Do you offer volume discounts?
+
+Yes! Enterprise customers with > 1M requests/month qualify for volume pricing.
+
+Contact sales@aptly.dev for a custom quote.
+
+---
+
+## Roadmap & Feature Requests
+
+### What's on the roadmap?
+
+Planned features:
+- ✅ **Q1 2026:** Python SDK, webhooks, usage dashboard
+- 🔄 **Q2 2026:** Custom PII entity types, role-based access control
+- 📋 **Q3 2026:** Response caching, cost analytics, multi-region deployment
+
+See [CHANGELOG](/changelog) for recent releases.
+
+### How can I request a feature?
+
+1. **Email:** feature-requests@aptly.dev
+2. **GitHub:** [github.com/your-org/aptly/issues](https://github.com/your-org/aptly/issues)
+3. **Community forum:** *(Coming soon)*
+
+Enterprise customers can schedule feature discussions with our product team.
+
+---
+
+## Support
+
+### How do I get help?
+
+- **Documentation:** [docs.aptly.dev](https://docs.aptly.dev)
+- **Email:** support@aptly.dev
+- **GitHub Issues:** [github.com/your-org/aptly/issues](https://github.com/your-org/aptly/issues)
+- **Status Page:** [status.aptly.dev](https://status.aptly.dev)
+
+**Response times:**
+- Critical issues: < 2 hours
+- Normal issues: < 24 hours
+- Questions: < 48 hours
+
+### Do you offer professional services?
+
+**Yes.** We offer:
+- Migration assistance (from direct LLM usage to Aptly)
+- Custom integration development
+- Compliance consulting (HIPAA, SOC2, GDPR)
+- Training and onboarding
+
+Contact sales@aptly.dev for details.
+
+---
+
+## Still have questions?
+
+Can't find what you're looking for? Contact us:
+- **Email:** support@aptly.dev
+- **Sales:** sales@aptly.dev
+- **Documentation:** [Full documentation](/)
+- **Troubleshooting:** [Troubleshooting guide](/troubleshooting)

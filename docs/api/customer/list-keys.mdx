@@ -1,0 +1,317 @@
+---
+title: "List API Keys"
+api: "GET /v1/api-keys"
+description: "Retrieve all active API keys for your account"
+---
+
+Get a list of all active (non-revoked) API keys associated with your customer account.
+
+## Authentication
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token with your Aptly API key: `Bearer apt_live_xxx` or `Bearer apt_test_xxx`
+</ParamField>
+
+## Response
+
+<ResponseField name="api_keys" type="array" required>
+  Array of API key objects (non-revoked only)
+
+  <Expandable title="api_key object">
+    <ResponseField name="id" type="string">
+      Unique key identifier
+    </ResponseField>
+
+    <ResponseField name="key_prefix" type="string">
+      First 12 characters of the key (e.g., `apt_live_xyz`)
+    </ResponseField>
+
+    <ResponseField name="name" type="string">
+      Human-readable name for the key
+    </ResponseField>
+
+    <ResponseField name="rate_limit_per_hour" type="integer">
+      Requests per hour allowed for this key
+    </ResponseField>
+
+    <ResponseField name="is_revoked" type="boolean">
+      Always `false` (revoked keys are not returned)
+    </ResponseField>
+
+    <ResponseField name="created_at" type="string">
+      ISO 8601 timestamp of key creation
+    </ResponseField>
+
+    <ResponseField name="last_used_at" type="string">
+      ISO 8601 timestamp of last use (null if never used)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Example Requests
+
+<CodeGroup>
+
+```bash cURL
+curl "https://api.aptly.dev/v1/api-keys" \
+  -H "Authorization: Bearer apt_live_xyz789"
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    "https://api.aptly.dev/v1/api-keys",
+    headers={"Authorization": "Bearer apt_live_xyz789"}
+)
+
+result = response.json()
+
+print(f"You have {len(result['api_keys'])} active API keys:")
+for key in result['api_keys']:
+    print(f"\n{key['name']}")
+    print(f"  Prefix: {key['key_prefix']}")
+    print(f"  Rate Limit: {key['rate_limit_per_hour']}/hour")
+    print(f"  Last Used: {key.get('last_used_at', 'Never')}")
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.aptly.dev/v1/api-keys', {
+  headers: {
+    'Authorization': 'Bearer apt_live_xyz789'
+  }
+});
+
+const result = await response.json();
+
+console.log(`Active API Keys: ${result.api_keys.length}`);
+result.api_keys.forEach(key => {
+  console.log(`\n${key.name}`);
+  console.log(`  Prefix: ${key.key_prefix}`);
+  console.log(`  Rate Limit: ${key.rate_limit_per_hour}/hour`);
+});
+```
+
+</CodeGroup>
+
+## Response Example
+
+<ResponseExample>
+
+```json 200 - Success
+{
+  "api_keys": [
+    {
+      "id": "key_abc123",
+      "key_prefix": "apt_live_xyz",
+      "name": "Production API Key",
+      "rate_limit_per_hour": 1000,
+      "is_revoked": false,
+      "created_at": "2026-01-15T10:00:00Z",
+      "last_used_at": "2026-01-31T09:45:00Z"
+    },
+    {
+      "id": "key_def456",
+      "key_prefix": "apt_test_ghi",
+      "name": "Development Key",
+      "rate_limit_per_hour": 100,
+      "is_revoked": false,
+      "created_at": "2026-01-20T14:30:00Z",
+      "last_used_at": null
+    }
+  ]
+}
+```
+
+```json 401 - Unauthorized
+{
+  "detail": "Invalid API key"
+}
+```
+
+</ResponseExample>
+
+## Use Cases
+
+### Audit Active Keys
+
+Check which keys are currently active:
+
+```python
+import requests
+from datetime import datetime, timedelta, timezone
+
+def audit_api_keys(api_key):
+    """Audit API keys and identify stale ones."""
+    response = requests.get(
+        "https://api.aptly.dev/v1/api-keys",
+        headers={"Authorization": f"Bearer {api_key}"}
+    )
+    result = response.json()
+
+    now = datetime.now(timezone.utc)
+    thirty_days_ago = now - timedelta(days=30)
+
+    print(f"Total Active Keys: {len(result['api_keys'])}\n")
+
+    for key in result['api_keys']:
+        last_used = key.get('last_used_at')
+
+        if last_used is None:
+            status = "⚠ NEVER USED"
+        else:
+            last_used_dt = datetime.fromisoformat(last_used.replace('Z', '+00:00'))
+            if last_used_dt < thirty_days_ago:
+                days_ago = (now - last_used_dt).days
+                status = f"⚠ STALE ({days_ago} days ago)"
+            else:
+                status = "✓ Active"
+
+        print(f"{status} - {key['name']}")
+        print(f"  Prefix: {key['key_prefix']}")
+        print(f"  Rate Limit: {key['rate_limit_per_hour']}/hour")
+        print()
+
+# Usage
+audit_api_keys("apt_live_xyz789")
+```
+
+### Find Key by Prefix
+
+Match a key prefix to identify which key is being used:
+
+```python
+def find_key_by_prefix(api_key, prefix):
+    """Find a key by its prefix."""
+    response = requests.get(
+        "https://api.aptly.dev/v1/api-keys",
+        headers={"Authorization": f"Bearer {api_key}"}
+    )
+    result = response.json()
+
+    for key in result['api_keys']:
+        if key['key_prefix'] == prefix:
+            return key
+
+    return None
+
+# Usage
+key = find_key_by_prefix("apt_live_xyz789", "apt_live_abc")
+if key:
+    print(f"Found: {key['name']}")
+else:
+    print("Key not found or has been revoked")
+```
+
+### List Keys by Environment
+
+Organize keys by environment based on naming:
+
+```python
+def list_keys_by_environment(api_key):
+    """Categorize keys by environment based on name."""
+    response = requests.get(
+        "https://api.aptly.dev/v1/api-keys",
+        headers={"Authorization": f"Bearer {api_key}"}
+    )
+    result = response.json()
+
+    environments = {
+        'production': [],
+        'staging': [],
+        'development': [],
+        'other': []
+    }
+
+    for key in result['api_keys']:
+        name_lower = key['name'].lower()
+        if 'prod' in name_lower:
+            environments['production'].append(key)
+        elif 'stag' in name_lower:
+            environments['staging'].append(key)
+        elif 'dev' in name_lower or 'test' in name_lower:
+            environments['development'].append(key)
+        else:
+            environments['other'].append(key)
+
+    for env, keys in environments.items():
+        if keys:
+            print(f"\n{env.upper()}:")
+            for key in keys:
+                print(f"  - {key['name']} ({key['key_prefix']})")
+
+# Usage
+list_keys_by_environment("apt_live_xyz789")
+```
+
+### Monitor Key Usage
+
+Create a dashboard showing key usage:
+
+```python
+def key_usage_dashboard(api_key):
+    """Display a dashboard of API key usage."""
+    response = requests.get(
+        "https://api.aptly.dev/v1/api-keys",
+        headers={"Authorization": f"Bearer {api_key}"}
+    )
+    result = response.json()
+
+    print("=" * 60)
+    print("API KEY USAGE DASHBOARD")
+    print("=" * 60)
+
+    for key in result['api_keys']:
+        print(f"\n📋 {key['name']}")
+        print(f"   ID: {key['id']}")
+        print(f"   Prefix: {key['key_prefix']}")
+        print(f"   Rate Limit: {key['rate_limit_per_hour']}/hour")
+
+        last_used = key.get('last_used_at')
+        if last_used:
+            created = datetime.fromisoformat(key['created_at'].replace('Z', '+00:00'))
+            used = datetime.fromisoformat(last_used.replace('Z', '+00:00'))
+            age_days = (datetime.now(timezone.utc) - created).days
+            last_used_days = (datetime.now(timezone.utc) - used).days
+
+            print(f"   Age: {age_days} days")
+            print(f"   Last Used: {last_used_days} days ago")
+        else:
+            print(f"   Status: Never used")
+
+    print("\n" + "=" * 60)
+```
+
+## Important Notes
+
+<Note>
+  **Full API keys are never returned** - only the `key_prefix` is shown for security. The full key is only provided once during creation.
+</Note>
+
+### Revoked Keys
+
+Revoked keys are **not included** in this response. To see revoked keys, admins can use the [Get Customer](/api/admin/get-customer) admin endpoint.
+
+### Key Identification
+
+Use the `key_prefix` to identify keys:
+- It's the first 12 characters of the full key
+- Example: `apt_live_xyz` from `apt_live_xyz789abc123...`
+- Safe to display in logs and UIs
+
+### Sorting
+
+Keys are returned in **descending order by creation date** (newest first).
+
+## Security Best Practices
+
+1. **Regular audits** - Review your keys monthly
+2. **Revoke unused keys** - If `last_used_at` is old, consider revoking
+3. **Descriptive names** - Use clear names to identify key purposes
+4. **Principle of least privilege** - Only create keys when needed
+
+## Related Endpoints
+
+- [Create API Key](/api/customer/create-key) - Generate a new key
+- [Revoke API Key](/api/customer/revoke-key) - Revoke an existing key
+- [Get Profile](/api/customer/get-profile) - View your customer profile
