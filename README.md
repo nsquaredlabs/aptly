@@ -24,102 +24,52 @@ Organizations need LLMs but can't risk sending sensitive data to external APIs. 
 
 ## Quick Start
 
-### Prerequisites
+Aptly is a **hosted service** - no installation or infrastructure setup required!
 
-- Python 3.11+
-- Supabase account (database)
-- Redis instance (rate limiting)
+### Get Your API Key
 
-### Installation
+Contact the Aptly team to receive your API key:
+- **Email:** sales@aptly.dev
+- **Website:** https://aptly.dev
+
+You'll receive an API key in the format `apt_live_*` or `apt_test_*`.
+
+### Make Your First Request
 
 ```bash
-# Clone repository
-git clone https://github.com/your-org/aptly.git
-cd aptly
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Download spaCy model for PII detection
-python -m spacy download en_core_web_sm
-
-# Set up environment variables
-cp .env.example .env
-# Edit .env with your Supabase and Redis credentials
+curl -X POST https://api-aptly.nsquaredlabs.com/v1/chat/completions \
+  -H "Authorization: Bearer apt_live_YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gpt-4",
+    "messages": [{"role": "user", "content": "My SSN is 123-45-6789"}],
+    "api_keys": {"openai": "sk-YOUR_OPENAI_KEY"}
+  }'
 ```
 
-### Environment Variables
+### Python Example
 
-```bash
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_SERVICE_KEY=your-service-role-key
-REDIS_URL=redis://localhost:6379/0
-APTLY_ADMIN_SECRET=your-secure-admin-secret
-ENVIRONMENT=development
-```
+```python
+from openai import OpenAI
 
-### Run Locally
+client = OpenAI(
+    api_key="apt_live_YOUR_API_KEY",
+    base_url="https://api-aptly.nsquaredlabs.com/v1"
+)
 
-```bash
-uvicorn src.main:app --reload --port 8000
+response = client.chat.completions.create(
+    model="gpt-4",
+    messages=[{"role": "user", "content": "My email is user@example.com"}],
+    extra_body={"api_keys": {"openai": "sk-YOUR_OPENAI_KEY"}}
+)
+
+print(response.choices[0].message.content)
+# Output: "My email is EMAIL_A" (PII automatically redacted!)
 ```
 
 ---
 
-## Usage Example
-
-### 1. Create a Customer (Admin)
-
-```bash
-curl -X POST http://localhost:8000/v1/admin/customers \
-  -H "X-Admin-Secret: your-admin-secret" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "admin@company.com",
-    "company_name": "Company Inc",
-    "plan": "pro"
-  }'
-```
-
-**Response:**
-```json
-{
-  "customer": {
-    "id": "cus_abc123",
-    "email": "admin@company.com",
-    "company_name": "Company Inc"
-  },
-  "api_key": {
-    "key": "apt_live_xyz789...",
-    "key_id": "key_123"
-  }
-}
-```
-
-### 2. Make a Chat Completion Request (Customer)
-
-```python
-import requests
-
-response = requests.post(
-    "http://localhost:8000/v1/chat/completions",
-    headers={
-        "Authorization": "Bearer apt_live_xyz789...",
-        "Content-Type": "application/json"
-    },
-    json={
-        "model": "gpt-4",
-        "messages": [
-            {"role": "user", "content": "My SSN is 123-45-6789. What should I know about credit cards?"}
-        ],
-        "api_keys": {
-            "openai": "sk-your-openai-key"
-        }
-    }
-)
-
-print(response.json())
-```
+## How It Works
 
 **What happens:**
 1. Aptly detects "123-45-6789" as PII
@@ -143,7 +93,7 @@ Supported entity types: PERSON, EMAIL, PHONE_NUMBER, SSN, CREDIT_CARD, and more 
 
 ```python
 response = requests.post(
-    "http://localhost:8000/v1/chat/completions",
+    "https://api-aptly.nsquaredlabs.com/v1/chat/completions",
     headers={"Authorization": "Bearer apt_live_..."},
     json={
         "model": "gpt-4",
@@ -164,7 +114,7 @@ for line in response.iter_lines():
 Query all requests with pagination:
 
 ```bash
-curl http://localhost:8000/v1/logs \
+curl https://api-aptly.nsquaredlabs.com/v1/logs \
   -H "Authorization: Bearer apt_live_..."
 ```
 
@@ -174,66 +124,49 @@ Logs include: timestamps, models used, token counts, costs, PII detections, and 
 
 ## API Endpoints
 
-### Admin (X-Admin-Secret)
-- `POST /v1/admin/customers` - Create customer
-- `GET /v1/admin/customers` - List customers
-- `GET /v1/admin/customers/{id}` - Get customer details
-- `POST /v1/admin/customers/{id}/api-keys` - Create API key for customer
+All requests use `https://api-aptly.nsquaredlabs.com` as the base URL.
 
-### Customer (Authorization: Bearer apt_live_*)
-- `POST /v1/chat/completions` - Chat completion with PII redaction
+### Chat & LLM Operations
+- `POST /v1/chat/completions` - Chat completion with automatic PII redaction
+
+### Your Account
 - `GET /v1/api-keys` - List your API keys
 - `POST /v1/api-keys` - Create new API key
 - `DELETE /v1/api-keys/{id}` - Revoke API key
-- `GET /v1/logs` - Query audit logs
+- `GET /v1/me` - Get your profile
+- `PATCH /v1/me` - Update your settings
+
+### Audit Logs
+- `GET /v1/logs` - Query your audit logs
 - `GET /v1/logs/{id}` - Get log details
-- `GET /v1/me` - Get profile
-- `PATCH /v1/me` - Update settings
 
 ### Public
-- `GET /v1/health` - Health check
-
----
-
-## Testing
-
-```bash
-# Run all tests with coverage
-pytest tests/ -v --cov=src --cov-report=term-missing
-
-# Run specific test file
-pytest tests/test_chat_completions.py -v
-
-# Code quality
-ruff check src/ tests/
-mypy src/
-```
-
-**Current Status:** 95 tests passing, 84% coverage
-
----
-
-## Deployment
-
-See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed production deployment instructions (Railway, Supabase, Redis setup).
-
-Quick deploy checklist:
-1. Set up Supabase project and run migrations
-2. Add Redis service (Railway Redis or Upstash)
-3. Configure environment variables
-4. Deploy to Railway
-5. Run verification scripts
+- `GET /v1/health` - Health check (no auth required)
 
 ---
 
 ## Documentation
 
-Full documentation available at: *(coming soon - Mintlify docs)*
+📚 **Full documentation:** https://docs.aptly.dev *(coming soon)*
 
-For development guidance, see:
+- [API Reference](https://docs.aptly.dev/api) - Complete API documentation
+- [Guides](https://docs.aptly.dev/guides) - PII redaction, compliance, rate limiting
+- [Architecture](https://docs.aptly.dev/deployment/architecture) - How Aptly works internally
+
+---
+
+## For Contributors & Developers
+
+If you're contributing to Aptly or want to self-host:
+
 - [SPEC.md](SPEC.md) - Product specification
-- [DEPLOYMENT.md](DEPLOYMENT.md) - Production deployment
-- [CLAUDE.md](CLAUDE.md) - AI assistant guidance
+- [DEPLOYMENT.md](DEPLOYMENT.md) - Self-hosting deployment guide
+- [CLAUDE.md](CLAUDE.md) - Development guidance
+
+**Running tests:**
+```bash
+pytest tests/ -v --cov=src --cov-report=term-missing
+```
 
 ---
 

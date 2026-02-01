@@ -61,16 +61,7 @@
         "api/health",
         "api/chat-completions",
         {
-          "group": "Admin Endpoints",
-          "pages": [
-            "api/admin/create-customer",
-            "api/admin/list-customers",
-            "api/admin/get-customer",
-            "api/admin/create-api-key"
-          ]
-        },
-        {
-          "group": "Customer Endpoints",
+          "group": "Your Account",
           "pages": [
             "api/customer/list-keys",
             "api/customer/create-key",
@@ -98,11 +89,9 @@
       ]
     },
     {
-      "group": "Advanced (Self-Hosting)",
+      "group": "Understanding Aptly",
       "pages": [
-        "deployment/architecture",
-        "deployment/production",
-        "deployment/local-development"
+        "deployment/architecture"
       ]
     },
     {

@@ -5,52 +5,20 @@ description: "Understanding Aptly's two-path authentication model"
 
 # Authentication
 
-Aptly uses a **two-path authentication model** to solve the bootstrap problem: how do you create API keys without already having an API key?
+Aptly uses **API key authentication** to secure access to the API. All requests must include a valid API key.
 
-## Overview
+## Getting Your API Key
 
-<CardGroup cols={2}>
-  <Card title="Admin Secret" icon="user-shield" color="#ea5a0c">
-    Server-side secret for **creating customers**
-  </Card>
-  <Card title="API Keys" icon="key" color="#0285c7">
-    Customer keys for **all operations**
-  </Card>
-</CardGroup>
+To use Aptly, you'll need an API key from NSquared Labs. Contact the Aptly team to get started:
 
-## Authentication Paths
+- **Email:** sales@aptly.dev
+- **Website:** https://aptly.dev
 
-### Path 1: Admin Secret
+You'll receive an API key in the format `apt_live_*` (production) or `apt_test_*` (testing).
 
-The Admin Secret is a server-side environment variable (`APTLY_ADMIN_SECRET`) used **only** for:
+## Using Your API Key
 
-- Creating new customers (`POST /v1/admin/customers`)
-- Listing customers (`GET /v1/admin/customers`)
-- Viewing customer details (`GET /v1/admin/customers/{id}`)
-- Creating API keys for customers (`POST /v1/admin/customers/{id}/api-keys`)
-
-<Warning>
-  The Admin Secret should **never** be shared with customers or exposed in client-side code. It's a server-side secret only.
-</Warning>
-
-#### Using the Admin Secret
-
-Pass it via the `X-Admin-Secret` header:
-
-```bash
-curl -X POST https://api-aptly.nsquaredlabs.com/v1/admin/customers \
-  -H "X-Admin-Secret: your-admin-secret" \
-  -H "Content-Type: application/json" \
-  -d '{"email": "user@company.com", "company_name": "Company Inc"}'
-```
-
-<Tip>
-  Generate a secure admin secret with: `openssl rand -base64 32`
-</Tip>
-
-### Path 2: Customer API Keys
-
-Once a customer is created, they receive an API key in the format `apt_live_*` or `apt_test_*`. This key is used for **all customer-facing operations**:
+Your API key is used for **all API operations**:
 
 - Chat completions
 - Managing their own API keys
