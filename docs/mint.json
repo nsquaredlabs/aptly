@@ -98,7 +98,7 @@
       ]
     },
     {
-      "group": "Deployment",
+      "group": "Advanced (Self-Hosting)",
       "pages": [
         "deployment/architecture",
         "deployment/production",

@@ -1,9 +1,22 @@
 ---
-title: "Production Deployment"
-description: "Deploy Aptly to production on Railway with Supabase and Redis"
+title: "Self-Hosting Guide (Optional)"
+description: "Deploy your own Aptly instance on Railway"
 ---
 
-This guide walks you through deploying Aptly to production using Railway, Supabase, and Redis. By the end, you'll have a fully functional Aptly instance running in production.
+<Warning>
+**Most customers don't need this guide!**
+
+If you're using Aptly as a hosted service (the recommended approach), you can skip this entirely. Simply use our hosted API at `https://api-aptly.nsquaredlabs.com` as shown in the [Quickstart Guide](/quickstart).
+
+**This guide is only for:**
+- Enterprise customers who need to self-host for compliance/control reasons
+- The Aptly team deploying the production service
+- Contributors testing deployment changes
+</Warning>
+
+# Self-Hosting Aptly on Railway
+
+This guide walks you through deploying your own Aptly instance to production using Railway, Supabase, and Redis.
 
 ## Prerequisites
 
