@@ -116,6 +116,7 @@ async def client(mock_supabase, fake_redis):
     import src.auth
     import src.main
     import src.compliance.audit_logger
+    import src.analytics
     from src.main import app
     from src.rate_limiter import rate_limiter
 
@@ -124,11 +125,13 @@ async def client(mock_supabase, fake_redis):
     original_auth = src.auth.supabase
     original_main = src.main.supabase
     original_audit = src.compliance.audit_logger.supabase
+    original_analytics = src.analytics.supabase
 
     src.supabase_client.supabase = mock_supabase
     src.auth.supabase = mock_supabase
     src.main.supabase = mock_supabase
     src.compliance.audit_logger.supabase = mock_supabase
+    src.analytics.supabase = mock_supabase
 
     # Replace the rate limiter's redis with our fake
     original_redis = rate_limiter._redis
@@ -145,6 +148,7 @@ async def client(mock_supabase, fake_redis):
     src.auth.supabase = original_auth
     src.main.supabase = original_main
     src.compliance.audit_logger.supabase = original_audit
+    src.analytics.supabase = original_analytics
     rate_limiter._redis = original_redis
 
 

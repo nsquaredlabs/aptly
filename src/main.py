@@ -1,4 +1,7 @@
 import time
+import csv
+import io
+import json
 import structlog
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone, timedelta
@@ -48,6 +51,7 @@ from src.llm_router import (
     format_sse_done,
     LLMResponse,
 )
+from src.analytics import analytics_service
 
 logger = structlog.get_logger()
 
@@ -237,6 +241,101 @@ class CustomerProfileResponse(BaseModel):
 class UpdateCustomerRequest(BaseModel):
     pii_redaction_mode: str | None = None
     compliance_frameworks: list[str] | None = None
+
+
+# Analytics Models
+class UsageDataPoint(BaseModel):
+    date: str
+    requests: int
+    tokens_input: int
+    tokens_output: int
+    cost_usd: float
+    avg_latency_ms: int
+
+
+class UsageSummaryInfo(BaseModel):
+    total_requests: int
+    total_tokens: int
+    total_cost_usd: float
+    avg_latency_ms: int
+    period_start: str
+    period_end: str
+
+
+class UsageSummaryResponse(BaseModel):
+    summary: UsageSummaryInfo
+    time_series: list[UsageDataPoint]
+
+
+class ModelData(BaseModel):
+    model: str
+    provider: str
+    requests: int
+    tokens_input: int
+    tokens_output: int
+    cost_usd: float
+    avg_latency_ms: int
+    percentage_of_requests: float
+
+
+class ModelBreakdownResponse(BaseModel):
+    models: list[ModelData]
+    period_start: str
+    period_end: str
+
+
+class UserData(BaseModel):
+    user_id: str
+    requests: int
+    tokens_input: int
+    tokens_output: int
+    cost_usd: float
+    last_active: str
+
+
+class UsersWithNoId(BaseModel):
+    requests: int
+    tokens_input: int
+    tokens_output: int
+    cost_usd: float
+
+
+class UserBreakdownResponse(BaseModel):
+    users: list[UserData]
+    users_with_no_id: UsersWithNoId
+    total_unique_users: int
+    period_start: str
+    period_end: str
+
+
+class PIISummaryInfo(BaseModel):
+    requests_with_input_pii: int
+    requests_with_response_pii: int
+    total_requests: int
+    input_pii_rate: float
+    response_pii_rate: float
+
+
+class PIIEntityType(BaseModel):
+    type: str
+    input_count: int
+    response_count: int
+    total_count: int
+
+
+class PIIDataPoint(BaseModel):
+    date: str
+    requests_with_pii: int
+    total_requests: int
+    pii_rate: float
+
+
+class PIIStatsResponse(BaseModel):
+    summary: PIISummaryInfo
+    entity_types: list[PIIEntityType]
+    time_series: list[PIIDataPoint]
+    period_start: str
+    period_end: str
 
 
 # ============================================================================
@@ -1136,4 +1235,153 @@ async def update_profile(
         retention_days=updated.get("retention_days", 2555),
         pii_redaction_mode=updated.get("pii_redaction_mode", "mask"),
         created_at=updated["created_at"],
+    )
+
+
+# ============================================================================
+# Analytics
+# ============================================================================
+
+
+def _parse_date(date_str: str | None, default: datetime) -> datetime:
+    """Parse an ISO date string, falling back to default."""
+    if not date_str:
+        return default
+    try:
+        return datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+    except ValueError:
+        return datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+
+
+@app.get("/v1/analytics/usage", response_model=UsageSummaryResponse)
+async def analytics_usage(
+    auth: CustomerAuth,
+    start_date: str | None = None,
+    end_date: str | None = None,
+    granularity: str = "day",
+):
+    """Usage summary with time series data."""
+    if granularity not in ("day", "week", "month"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "error": {
+                    "type": "invalid_request",
+                    "message": "granularity must be one of: day, week, month",
+                    "code": "INVALID_REQUEST",
+                }
+            },
+        )
+
+    now = datetime.now(timezone.utc)
+    return await analytics_service.get_usage_summary(
+        customer_id=auth.customer.id,
+        start_date=_parse_date(start_date, now - timedelta(days=30)),
+        end_date=_parse_date(end_date, now),
+        granularity=granularity,
+    )
+
+
+@app.get("/v1/analytics/models", response_model=ModelBreakdownResponse)
+async def analytics_models(
+    auth: CustomerAuth,
+    start_date: str | None = None,
+    end_date: str | None = None,
+):
+    """Breakdown of usage by model."""
+    now = datetime.now(timezone.utc)
+    return await analytics_service.get_model_breakdown(
+        customer_id=auth.customer.id,
+        start_date=_parse_date(start_date, now - timedelta(days=30)),
+        end_date=_parse_date(end_date, now),
+    )
+
+
+@app.get("/v1/analytics/users", response_model=UserBreakdownResponse)
+async def analytics_users(
+    auth: CustomerAuth,
+    start_date: str | None = None,
+    end_date: str | None = None,
+    limit: int = 50,
+):
+    """Breakdown of usage by end-user."""
+    now = datetime.now(timezone.utc)
+    return await analytics_service.get_user_breakdown(
+        customer_id=auth.customer.id,
+        start_date=_parse_date(start_date, now - timedelta(days=30)),
+        end_date=_parse_date(end_date, now),
+        limit=min(max(1, limit), 100),
+    )
+
+
+@app.get("/v1/analytics/pii", response_model=PIIStatsResponse)
+async def analytics_pii(
+    auth: CustomerAuth,
+    start_date: str | None = None,
+    end_date: str | None = None,
+):
+    """PII detection statistics."""
+    now = datetime.now(timezone.utc)
+    return await analytics_service.get_pii_stats(
+        customer_id=auth.customer.id,
+        start_date=_parse_date(start_date, now - timedelta(days=30)),
+        end_date=_parse_date(end_date, now),
+    )
+
+
+@app.get("/v1/analytics/export")
+async def analytics_export(
+    auth: CustomerAuth,
+    start_date: str,
+    end_date: str,
+    format: str = "csv",
+    include: str | None = None,
+):
+    """Export analytics data as CSV or JSON."""
+    if format not in ("csv", "json"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "error": {
+                    "type": "invalid_request",
+                    "message": "format must be one of: csv, json",
+                    "code": "INVALID_REQUEST",
+                }
+            },
+        )
+
+    start_dt = _parse_date(start_date, datetime.now(timezone.utc))
+    end_dt = _parse_date(end_date, datetime.now(timezone.utc))
+    include_list = [s.strip() for s in include.split(",")] if include else None
+
+    rows = await analytics_service.get_export_data(
+        customer_id=auth.customer.id,
+        start_date=start_dt,
+        end_date=end_dt,
+        include=include_list,
+    )
+
+    filename = f"aptly-analytics-{start_dt.strftime('%Y-%m')}"
+
+    if format == "json":
+        return Response(
+            content=json.dumps(rows),
+            media_type="application/json",
+            headers={"Content-Disposition": f'attachment; filename="{filename}.json"'},
+        )
+
+    # CSV
+    output = io.StringIO()
+    if rows:
+        writer = csv.DictWriter(output, fieldnames=rows[0].keys())
+        writer.writeheader()
+        writer.writerows(rows)
+    else:
+        writer = csv.writer(output)
+        writer.writerow(["date", "requests", "tokens_input", "tokens_output", "cost_usd", "avg_latency_ms", "pii_detected_count", "top_model"])
+
+    return Response(
+        content=output.getvalue(),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}.csv"'},
     )

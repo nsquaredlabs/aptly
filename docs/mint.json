@@ -76,6 +76,16 @@
             "api/audit-logs/query-logs",
             "api/audit-logs/get-log"
           ]
+        },
+        {
+          "group": "Analytics",
+          "pages": [
+            "api/analytics/usage",
+            "api/analytics/models",
+            "api/analytics/users",
+            "api/analytics/pii",
+            "api/analytics/export"
+          ]
         }
       ]
     },
