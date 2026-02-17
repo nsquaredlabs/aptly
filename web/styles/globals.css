@@ -1,4 +1,8 @@
-/* Custom global styles for Aptly docs */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom global styles for Aptly */
 
 :root {
   --aptly-blue: #3b82f6;
@@ -54,4 +58,23 @@ pre {
 
 .dark .nx-border:hover {
   border-color: var(--aptly-blue-dark);
+}
+
+/* Terminal-inspired styling */
+@layer utilities {
+  .terminal-window {
+    @apply bg-gray-900 rounded-xl shadow-2xl;
+  }
+
+  .terminal-header {
+    @apply flex items-center gap-2 px-4 py-3 border-b border-gray-800;
+  }
+
+  .terminal-dot {
+    @apply w-3 h-3 rounded-full;
+  }
+
+  .terminal-body {
+    @apply p-6 font-mono text-sm;
+  }
 }

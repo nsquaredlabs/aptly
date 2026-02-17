@@ -9,21 +9,8 @@ const withNextra = require('nextra')({
 })
 
 module.exports = withNextra({
-  basePath: '/docs',
-  assetPrefix: '/docs',
   images: {
     unoptimized: true,
   },
   transpilePackages: ['nextra', 'nextra-theme-docs'],
-  // Redirect root to /docs
-  async redirects() {
-    return [
-      {
-        source: '/',
-        destination: '/docs',
-        basePath: false,
-        permanent: false,
-      },
-    ]
-  },
 })

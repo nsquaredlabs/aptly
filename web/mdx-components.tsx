@@ -1,5 +1,3 @@
-import type { AppProps } from 'next/app'
-import { MDXProvider } from '@mdx-js/react'
 import {
   Card,
   CardGroup,
@@ -18,10 +16,9 @@ import {
   Tip,
   ResponseField,
   Expandable,
-} from '../components'
-import '../styles/globals.css'
+} from './components'
 
-const components = {
+const mdxComponents = {
   Card,
   CardGroup,
   CodeGroup,
@@ -41,10 +38,8 @@ const components = {
   Expandable,
 }
 
-export default function App({ Component, pageProps }: AppProps) {
-  return (
-    <MDXProvider components={components}>
-      <Component {...pageProps} />
-    </MDXProvider>
-  )
+export function useMDXComponents(components: any) {
+  return { ...mdxComponents, ...components }
 }
+
+export default mdxComponents
