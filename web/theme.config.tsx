@@ -3,10 +3,6 @@ import { DocsThemeConfig } from 'nextra-theme-docs'
 
 const config: DocsThemeConfig = {
   logo: <span style={{ fontWeight: 700, fontSize: '1.25rem' }}>Aptly</span>,
-  project: {
-    link: 'https://github.com/nsquaredlabs/aptly',
-  },
-  docsRepositoryBase: 'https://github.com/nsquaredlabs/aptly/tree/main/web',
   footer: {
     text: '© 2026 NSquared Labs',
   },
