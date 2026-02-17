@@ -7,6 +7,8 @@
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
+**📚 Documentation:** [https://aptly.nsquaredlabs.com/docs](https://aptly.nsquaredlabs.com/docs)
+
 ---
 
 ## Why Aptly?

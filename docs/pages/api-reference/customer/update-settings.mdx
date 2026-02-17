@@ -1,0 +1,579 @@
+---
+title: "Update Settings"
+api: "PATCH /v1/me"
+description: "Update your customer settings including PII redaction mode and compliance frameworks"
+---
+
+Update your customer account settings. Currently supports changing PII redaction mode and compliance frameworks.
+
+## Authentication
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token with your Aptly API key: `Bearer apt_live_xxx` or `Bearer apt_test_xxx`
+</ParamField>
+
+## Request Body
+
+<ParamField body="pii_redaction_mode" type="string">
+  PII redaction mode to use for requests
+
+  Must be one of:
+  - **mask**: Replace PII with tokens like `PERSON_A`, `EMAIL_A` (default)
+  - **hash**: Replace with consistent hashes like `HASH_a3f2c1b9`
+  - **remove**: Replace with `[REDACTED]`
+</ParamField>
+
+<ParamField body="compliance_frameworks" type="array">
+  List of compliance frameworks
+
+  Supported values: `["HIPAA", "SOC2", "GDPR", "PCI-DSS"]`
+
+  Pass an empty array `[]` to clear all frameworks.
+</ParamField>
+
+<Note>
+  At least one field must be provided. You cannot send an empty update.
+</Note>
+
+## Response
+
+<ResponseField name="id" type="string" required>
+  Your customer identifier
+</ResponseField>
+
+<ResponseField name="email" type="string" required>
+  Your email address
+</ResponseField>
+
+<ResponseField name="company_name" type="string">
+  Your company name
+</ResponseField>
+
+<ResponseField name="plan" type="string" required>
+  Your subscription plan
+</ResponseField>
+
+<ResponseField name="compliance_frameworks" type="array" required>
+  Updated compliance frameworks list
+</ResponseField>
+
+<ResponseField name="retention_days" type="integer" required>
+  Audit log retention period
+</ResponseField>
+
+<ResponseField name="pii_redaction_mode" type="string" required>
+  Updated PII redaction mode
+</ResponseField>
+
+<ResponseField name="created_at" type="string" required>
+  Account creation timestamp
+</ResponseField>
+
+## Example Requests
+
+### Update PII Redaction Mode
+
+<CodeGroup>
+
+```bash cURL
+curl -X PATCH "https://api-aptly.nsquaredlabs.com/v1/me" \
+  -H "Authorization: Bearer apt_live_xyz789" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "pii_redaction_mode": "hash"
+  }'
+```
+
+```python Python
+import requests
+
+response = requests.patch(
+    "https://api-aptly.nsquaredlabs.com/v1/me",
+    headers={
+        "Authorization": "Bearer apt_live_xyz789",
+        "Content-Type": "application/json"
+    },
+    json={
+        "pii_redaction_mode": "hash"
+    }
+)
+
+updated = response.json()
+print(f"✓ PII mode updated to: {updated['pii_redaction_mode']}")
+```
+
+```javascript JavaScript
+const response = await fetch('https://api-aptly.nsquaredlabs.com/v1/me', {
+  method: 'PATCH',
+  headers: {
+    'Authorization': 'Bearer apt_live_xyz789',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    pii_redaction_mode: 'hash'
+  })
+});
+
+const updated = await response.json();
+console.log(`Updated to: ${updated.pii_redaction_mode}`);
+```
+
+</CodeGroup>
+
+### Update Compliance Frameworks
+
+<CodeGroup>
+
+```bash cURL
+curl -X PATCH "https://api-aptly.nsquaredlabs.com/v1/me" \
+  -H "Authorization: Bearer apt_live_xyz789" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "compliance_frameworks": ["HIPAA", "SOC2", "GDPR"]
+  }'
+```
+
+```python Python
+import requests
+
+response = requests.patch(
+    "https://api-aptly.nsquaredlabs.com/v1/me",
+    headers={
+        "Authorization": "Bearer apt_live_xyz789",
+        "Content-Type": "application/json"
+    },
+    json={
+        "compliance_frameworks": ["HIPAA", "SOC2", "GDPR"]
+    }
+)
+
+updated = response.json()
+print(f"✓ Compliance frameworks: {', '.join(updated['compliance_frameworks'])}")
+```
+
+```javascript JavaScript
+const response = await fetch('https://api-aptly.nsquaredlabs.com/v1/me', {
+  method: 'PATCH',
+  headers: {
+    'Authorization': 'Bearer apt_live_xyz789',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    compliance_frameworks: ['HIPAA', 'SOC2', 'GDPR']
+  })
+});
+
+const updated = await response.json();
+console.log('Frameworks:', updated.compliance_frameworks);
+```
+
+</CodeGroup>
+
+### Update Both Settings
+
+```python
+response = requests.patch(
+    "https://api-aptly.nsquaredlabs.com/v1/me",
+    headers={
+        "Authorization": "Bearer apt_live_xyz789",
+        "Content-Type": "application/json"
+    },
+    json={
+        "pii_redaction_mode": "remove",
+        "compliance_frameworks": ["HIPAA"]
+    }
+)
+
+updated = response.json()
+print(f"✓ PII mode: {updated['pii_redaction_mode']}")
+print(f"✓ Frameworks: {', '.join(updated['compliance_frameworks'])}")
+```
+
+## Response Examples
+
+<ResponseExample>
+
+```json 200 - Success
+{
+  "id": "cus_abc123",
+  "email": "admin@company.com",
+  "company_name": "Acme Corporation",
+  "plan": "pro",
+  "compliance_frameworks": ["HIPAA", "SOC2"],
+  "retention_days": 2555,
+  "pii_redaction_mode": "hash",
+  "created_at": "2026-01-15T10:00:00Z"
+}
+```
+
+```json 400 - Invalid PII Mode
+{
+  "error": {
+    "type": "invalid_request",
+    "message": "pii_redaction_mode must be one of: mask, hash, remove",
+    "code": "INVALID_REQUEST"
+  }
+}
+```
+
+```json 400 - No Fields to Update
+{
+  "error": {
+    "type": "invalid_request",
+    "message": "No valid fields to update",
+    "code": "INVALID_REQUEST"
+  }
+}
+```
+
+```json 401 - Unauthorized
+{
+  "detail": "Invalid API key"
+}
+```
+
+</ResponseExample>
+
+## Use Cases
+
+### Change PII Redaction Strategy
+
+Switch between different PII redaction modes:
+
+```python
+import requests
+
+def change_pii_mode(api_key, mode):
+    """
+    Change PII redaction mode.
+
+    Args:
+        api_key: Your Aptly API key
+        mode: One of 'mask', 'hash', 'remove'
+    """
+    valid_modes = ['mask', 'hash', 'remove']
+    if mode not in valid_modes:
+        print(f"✗ Invalid mode. Must be one of: {', '.join(valid_modes)}")
+        return None
+
+    response = requests.patch(
+        "https://api-aptly.nsquaredlabs.com/v1/me",
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        },
+        json={"pii_redaction_mode": mode}
+    )
+
+    if response.status_code == 200:
+        updated = response.json()
+        print(f"✓ PII redaction mode updated to: {mode}")
+        print(f"\nHow PII will be redacted:")
+        if mode == "mask":
+            print('  "John Smith" → "PERSON_A"')
+            print('  "john@email.com" → "EMAIL_A"')
+        elif mode == "hash":
+            print('  "John Smith" → "HASH_a3f2c1b9"')
+            print('  "john@email.com" → "HASH_def45678"')
+        else:  # remove
+            print('  "John Smith" → "[REDACTED]"')
+            print('  "john@email.com" → "[REDACTED]"')
+        return updated
+    else:
+        print(f"✗ Error: {response.json()}")
+        return None
+
+# Usage
+change_pii_mode("apt_live_xyz789", "hash")
+```
+
+### Add Compliance Framework
+
+Add a new compliance framework requirement:
+
+```python
+def add_compliance_framework(api_key, new_framework):
+    """Add a compliance framework to existing ones."""
+    # First, get current frameworks
+    get_response = requests.get(
+        "https://api-aptly.nsquaredlabs.com/v1/me",
+        headers={"Authorization": f"Bearer {api_key}"}
+    )
+    current = get_response.json()
+    current_frameworks = set(current['compliance_frameworks'])
+
+    # Add new framework
+    current_frameworks.add(new_framework)
+
+    # Update
+    response = requests.patch(
+        "https://api-aptly.nsquaredlabs.com/v1/me",
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        },
+        json={"compliance_frameworks": list(current_frameworks)}
+    )
+
+    if response.status_code == 200:
+        updated = response.json()
+        print(f"✓ Added {new_framework}")
+        print(f"  Current frameworks: {', '.join(updated['compliance_frameworks'])}")
+        return updated
+    else:
+        print(f"✗ Error: {response.json()}")
+        return None
+
+# Usage
+add_compliance_framework("apt_live_xyz789", "GDPR")
+```
+
+### Remove Compliance Framework
+
+Remove a specific framework:
+
+```python
+def remove_compliance_framework(api_key, framework_to_remove):
+    """Remove a compliance framework."""
+    # Get current frameworks
+    get_response = requests.get(
+        "https://api-aptly.nsquaredlabs.com/v1/me",
+        headers={"Authorization": f"Bearer {api_key}"}
+    )
+    current = get_response.json()
+    current_frameworks = set(current['compliance_frameworks'])
+
+    if framework_to_remove not in current_frameworks:
+        print(f"✗ {framework_to_remove} is not currently enabled")
+        return None
+
+    # Remove framework
+    current_frameworks.discard(framework_to_remove)
+
+    # Update
+    response = requests.patch(
+        "https://api-aptly.nsquaredlabs.com/v1/me",
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        },
+        json={"compliance_frameworks": list(current_frameworks)}
+    )
+
+    if response.status_code == 200:
+        updated = response.json()
+        print(f"✓ Removed {framework_to_remove}")
+        print(f"  Remaining: {', '.join(updated['compliance_frameworks']) or 'None'}")
+        return updated
+    else:
+        print(f"✗ Error: {response.json()}")
+        return None
+
+# Usage
+remove_compliance_framework("apt_live_xyz789", "PCI-DSS")
+```
+
+### Compliance Onboarding Wizard
+
+Interactive wizard to configure compliance settings:
+
+```python
+def compliance_onboarding_wizard(api_key):
+    """Interactive wizard for compliance setup."""
+    print("=" * 60)
+    print("APTLY COMPLIANCE CONFIGURATION WIZARD")
+    print("=" * 60)
+
+    # Step 1: Choose PII redaction mode
+    print("\n1. Choose PII Redaction Mode:")
+    print("   a) mask - Replace with PERSON_A, EMAIL_A (preserves context)")
+    print("   b) hash - Replace with HASH_xxx (consistent)")
+    print("   c) remove - Replace with [REDACTED] (maximum privacy)")
+
+    mode_choice = input("\nYour choice (a/b/c): ").lower()
+    mode_map = {'a': 'mask', 'b': 'hash', 'c': 'remove'}
+    pii_mode = mode_map.get(mode_choice, 'mask')
+
+    # Step 2: Choose compliance frameworks
+    print("\n2. Select Compliance Frameworks (comma-separated):")
+    print("   Available: HIPAA, SOC2, GDPR, PCI-DSS")
+    print("   Example: HIPAA,SOC2")
+
+    frameworks_input = input("\nFrameworks: ").strip()
+    if frameworks_input:
+        frameworks = [f.strip() for f in frameworks_input.split(',')]
+    else:
+        frameworks = []
+
+    # Step 3: Apply settings
+    print("\n3. Applying settings...")
+
+    response = requests.patch(
+        "https://api-aptly.nsquaredlabs.com/v1/me",
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        },
+        json={
+            "pii_redaction_mode": pii_mode,
+            "compliance_frameworks": frameworks
+        }
+    )
+
+    if response.status_code == 200:
+        updated = response.json()
+        print("\n✓ Configuration complete!")
+        print(f"  PII Mode: {updated['pii_redaction_mode']}")
+        print(f"  Frameworks: {', '.join(updated['compliance_frameworks']) or 'None'}")
+    else:
+        print(f"\n✗ Configuration failed: {response.json()}")
+
+# Usage
+compliance_onboarding_wizard("apt_live_xyz789")
+```
+
+### Validate Configuration
+
+Ensure settings meet requirements:
+
+```python
+def validate_configuration(api_key, required_mode=None, required_frameworks=None):
+    """
+    Validate that current settings meet requirements.
+
+    Args:
+        api_key: Your Aptly API key
+        required_mode: Required PII mode (optional)
+        required_frameworks: List of required frameworks (optional)
+    """
+    response = requests.get(
+        "https://api-aptly.nsquaredlabs.com/v1/me",
+        headers={"Authorization": f"Bearer {api_key}"}
+    )
+    profile = response.json()
+
+    issues = []
+
+    # Check PII mode
+    if required_mode and profile['pii_redaction_mode'] != required_mode:
+        issues.append(
+            f"PII mode is '{profile['pii_redaction_mode']}', "
+            f"but '{required_mode}' is required"
+        )
+
+    # Check frameworks
+    if required_frameworks:
+        enabled = set(profile['compliance_frameworks'])
+        required = set(required_frameworks)
+        missing = required - enabled
+
+        if missing:
+            issues.append(
+                f"Missing required frameworks: {', '.join(missing)}"
+            )
+
+    # Report
+    if issues:
+        print("⚠ CONFIGURATION ISSUES:")
+        for issue in issues:
+            print(f"  - {issue}")
+        return False
+    else:
+        print("✓ Configuration valid")
+        print(f"  PII Mode: {profile['pii_redaction_mode']}")
+        print(f"  Frameworks: {', '.join(profile['compliance_frameworks'])}")
+        return True
+
+# Usage
+validate_configuration(
+    "apt_live_xyz789",
+    required_mode="hash",
+    required_frameworks=["HIPAA", "SOC2"]
+)
+```
+
+## PII Redaction Modes Explained
+
+Choose the mode that best fits your use case:
+
+### mask (Default)
+**Best for:** General use, preserving context
+
+```
+Input:  "Contact John Smith at john@email.com"
+Output: "Contact PERSON_A at EMAIL_A"
+```
+
+**Pros:**
+- Preserves sentence structure
+- LLM understands there's a person and email
+- Consistent labeling (same person = same token)
+
+**Cons:**
+- Slightly longer output
+
+### hash
+**Best for:** Consistency across requests
+
+```
+Input:  "Contact John Smith at john@email.com"
+Output: "Contact HASH_a3f2c1b9 at HASH_def45678"
+```
+
+**Pros:**
+- Same PII always produces same hash
+- Trackable across multiple requests
+- More obfuscated than mask
+
+**Cons:**
+- Less readable
+- Hash collision possible (rare)
+
+### remove
+**Best for:** Maximum privacy
+
+```
+Input:  "Contact John Smith at john@email.com"
+Output: "Contact [REDACTED] at [REDACTED]"
+```
+
+**Pros:**
+- Complete removal of PII
+- Simplest approach
+- Most privacy-preserving
+
+**Cons:**
+- Loses all context
+- May affect LLM response quality
+
+## Compliance Frameworks
+
+Supported frameworks and their purposes:
+
+| Framework | Purpose | Common Use Cases |
+|-----------|---------|------------------|
+| **HIPAA** | Healthcare data | Medical applications, patient data |
+| **SOC2** | Enterprise security | B2B SaaS, enterprise customers |
+| **GDPR** | EU data protection | European users, personal data |
+| **PCI-DSS** | Payment card data | E-commerce, payment processing |
+
+<Note>
+  Setting compliance frameworks documents your requirements but doesn't automatically enforce additional rules. Aptly's PII redaction and audit logging support all frameworks.
+</Note>
+
+## What Cannot Be Updated
+
+The following fields **cannot** be updated via this endpoint:
+- Email address (contact admin)
+- Company name (contact admin)
+- Plan (free/pro) (contact admin)
+- Retention days (contact admin)
+
+These require admin-level changes.
+
+## Related Endpoints
+
+- [Get Profile](/api/customer/get-profile) - View current settings
+- [Chat Completions](/api/chat-completions) - Uses your PII redaction mode
+- [Query Audit Logs](/api/audit-logs/query-logs) - View redacted requests
+- [PII Redaction Guide](/guides/pii-redaction) - Learn more about redaction modes

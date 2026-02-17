@@ -1,0 +1,464 @@
+---
+title: "Compliance Guide"
+description: "How Aptly helps you meet HIPAA, SOC2, GDPR, and PCI-DSS compliance requirements"
+---
+
+Aptly is designed to help organizations use LLMs while maintaining compliance with industry regulations. This guide explains how Aptly's features support various compliance frameworks.
+
+## Supported Frameworks
+
+Aptly supports the following compliance frameworks:
+
+- **HIPAA** - Health Insurance Portability and Accountability Act
+- **SOC2** - Service Organization Control 2
+- **GDPR** - General Data Protection Regulation
+- **PCI-DSS** - Payment Card Industry Data Security Standard
+
+## Core Compliance Features
+
+### 1. Automatic PII Redaction
+
+**What it does:** Automatically detects and removes PII before sending to LLM providers.
+
+**Compliance benefit:**
+- **HIPAA**: Protects PHI (Protected Health Information)
+- **GDPR**: Minimizes personal data exposure
+- **PCI-DSS**: Prevents credit card data from leaving your infrastructure
+- **SOC2**: Data protection controls
+
+**How to use:**
+```python
+# PII is automatically redacted in all requests
+response = requests.post(
+    "https://api-aptly.nsquaredlabs.com/v1/chat/completions",
+    headers={"Authorization": "Bearer apt_live_xyz789"},
+    json={
+        "model": "gpt-4",
+        "messages": [
+            {"role": "user", "content": "Patient SSN: 123-45-6789 needs prescription"}
+        ],
+        "api_keys": {"openai": "sk-..."}
+    }
+)
+# The LLM receives: "Patient SSN: US_SSN_A needs prescription"
+```
+
+See the [PII Redaction Guide](/guides/pii-redaction) for details.
+
+### 2. Immutable Audit Logs
+
+**What it does:** Every API request is logged in an immutable audit trail.
+
+**Compliance benefit:**
+- **HIPAA**: Required audit trails for PHI access
+- **SOC2**: Logging and monitoring requirements
+- **GDPR**: Right to know how data is processed
+- **PCI-DSS**: Audit trail requirements
+
+**What's logged:**
+- Timestamp and duration
+- Original messages (with PII)
+- Redacted messages (sent to LLM)
+- PII detections (type, location, confidence)
+- Model and provider used
+- User identifier
+- Token usage and cost
+- Response content
+
+**Immutability:**
+Logs cannot be modified or deleted - enforced by database triggers.
+
+**How to query:**
+```python
+# Get audit logs for compliance review
+response = requests.get(
+    "https://api-aptly.nsquaredlabs.com/v1/logs",
+    headers={"Authorization": "Bearer apt_live_xyz789"},
+    params={
+        "start_date": "2026-01-01",
+        "end_date": "2026-01-31"
+    }
+)
+```
+
+See [Query Audit Logs](/api/audit-logs/query-logs) for details.
+
+### 3. Data Separation
+
+**What it does:** Original and redacted messages are stored separately.
+
+**Compliance benefit:**
+- **HIPAA**: Separate PHI from processed data
+- **GDPR**: Data minimization principle
+- **SOC2**: Logical access controls
+
+**Storage:**
+- **Original messages** - Stored in secure audit log, restricted access
+- **Redacted messages** - Sent to LLM provider
+- **Never mixed** - Clear separation for compliance
+
+### 4. No Key Storage
+
+**What it does:** LLM provider API keys are never stored by Aptly.
+
+**Compliance benefit:**
+- **SOC2**: Secret management controls
+- **PCI-DSS**: Key protection
+- **All frameworks**: Reduced attack surface
+
+**How it works:**
+- Keys are passed per-request
+- Used immediately for LLM call
+- Discarded after use
+- Never logged or stored
+
+### 5. Configurable Retention
+
+**What it does:** Control how long audit logs are retained.
+
+**Compliance benefit:**
+- **HIPAA**: Requires 6+ years retention
+- **GDPR**: Right to erasure (not applicable to audit logs)
+- **SOC2**: Log retention requirements
+
+**Default:** 2555 days (~7 years)
+
+**How to check:**
+```python
+response = requests.get(
+    "https://api-aptly.nsquaredlabs.com/v1/me",
+    headers={"Authorization": "Bearer apt_live_xyz789"}
+)
+print(f"Retention: {response.json()['retention_days']} days")
+```
+
+## HIPAA Compliance
+
+### Requirements Met
+
+| HIPAA Requirement | How Aptly Helps |
+|-------------------|-----------------|
+| **§164.308(a)(1)** - Security Management | PII redaction prevents PHI exposure |
+| **§164.308(a)(3)** - Workforce Security | API key authentication and access controls |
+| **§164.308(a)(5)** - Security Awareness | Documentation and best practices |
+| **§164.310(d)** - Device Controls | No PHI stored on devices (cloud-native) |
+| **§164.312(a)(1)** - Access Control | API key authentication, customer isolation |
+| **§164.312(b)** - Audit Controls | Immutable audit logs for all requests |
+| **§164.312(c)** - Integrity | Logs cannot be tampered with |
+| **§164.312(d)** - Transmission Security | HTTPS encryption for all requests |
+
+### HIPAA Configuration
+
+```python
+# Configure for HIPAA compliance
+requests.patch(
+    "https://api-aptly.nsquaredlabs.com/v1/me",
+    headers={"Authorization": "Bearer apt_live_xyz789"},
+    json={
+        "pii_redaction_mode": "remove",  # Maximum privacy
+        "compliance_frameworks": ["HIPAA"]
+    }
+)
+```
+
+### Business Associate Agreement (BAA)
+
+<Note>
+  Contact your admin about signing a Business Associate Agreement (BAA) if you're handling PHI.
+</Note>
+
+## SOC2 Compliance
+
+### Trust Service Criteria
+
+| Criteria | How Aptly Helps |
+|----------|-----------------|
+| **Security** | API authentication, encryption, PII redaction |
+| **Availability** | High uptime, health checks, monitoring |
+| **Confidentiality** | PII redaction, no key storage, data separation |
+| **Processing Integrity** | Immutable audit logs, data validation |
+| **Privacy** | PII protection, user consent, data minimization |
+
+### SOC2 Configuration
+
+```python
+# Configure for SOC2
+requests.patch(
+    "https://api-aptly.nsquaredlabs.com/v1/me",
+    headers={"Authorization": "Bearer apt_live_xyz789"},
+    json={
+        "pii_redaction_mode": "mask",  # Balanced approach
+        "compliance_frameworks": ["SOC2"]
+    }
+)
+```
+
+### Evidence Collection
+
+For SOC2 audits, use these endpoints to collect evidence:
+
+```python
+# 1. Show access controls
+profile = requests.get(
+    "https://api-aptly.nsquaredlabs.com/v1/me",
+    headers={"Authorization": "Bearer apt_live_xyz789"}
+).json()
+
+# 2. Show audit logging
+logs = requests.get(
+    "https://api-aptly.nsquaredlabs.com/v1/logs",
+    headers={"Authorization": "Bearer apt_live_xyz789"},
+    params={"limit": 100}
+).json()
+
+# 3. Show PII protection
+log_detail = requests.get(
+    "https://api-aptly.nsquaredlabs.com/v1/logs/log_abc123",
+    headers={"Authorization": "Bearer apt_live_xyz789"}
+).json()
+
+# Compare original vs redacted to show data protection
+```
+
+## GDPR Compliance
+
+### GDPR Principles
+
+| Principle | How Aptly Helps |
+|-----------|-----------------|
+| **Lawfulness, fairness, transparency** | Clear documentation, audit logs |
+| **Purpose limitation** | PII only used for LLM requests |
+| **Data minimization** | PII redaction reduces data exposure |
+| **Accuracy** | Original data preserved for verification |
+| **Storage limitation** | Configurable retention period |
+| **Integrity and confidentiality** | Encryption, access controls, immutability |
+| **Accountability** | Audit logs prove compliance |
+
+### GDPR Rights Support
+
+**Right to Access:**
+```python
+# Users can access their data via audit logs
+logs = requests.get(
+    "https://api-aptly.nsquaredlabs.com/v1/logs",
+    headers={"Authorization": "Bearer apt_live_xyz789"},
+    params={"user_id": "user_123"}
+).json()
+```
+
+**Right to Rectification:**
+Contact admin - audit logs are immutable by design.
+
+**Right to Erasure (Right to be Forgotten):**
+<Warning>
+  Audit logs are exempt from erasure under GDPR Article 17(3)(e) - "for archiving purposes in the public interest, scientific or historical research purposes."
+</Warning>
+
+**Right to Data Portability:**
+```python
+# Export user's data
+import json
+
+logs = requests.get(
+    "https://api-aptly.nsquaredlabs.com/v1/logs",
+    headers={"Authorization": "Bearer apt_live_xyz789"},
+    params={"user_id": "user_123", "limit": 1000}
+).json()
+
+with open('user_data_export.json', 'w') as f:
+    json.dump(logs, f, indent=2)
+```
+
+### GDPR Configuration
+
+```python
+# Configure for GDPR
+requests.patch(
+    "https://api-aptly.nsquaredlabs.com/v1/me",
+    headers={"Authorization": "Bearer apt_live_xyz789"},
+    json={
+        "pii_redaction_mode": "hash",  # Consistent but private
+        "compliance_frameworks": ["GDPR"]
+    }
+)
+```
+
+## PCI-DSS Compliance
+
+### PCI-DSS Requirements
+
+| Requirement | How Aptly Helps |
+|-------------|-----------------|
+| **Requirement 3** - Protect stored cardholder data | Credit card PII redaction |
+| **Requirement 4** - Encrypt transmission | HTTPS/TLS encryption |
+| **Requirement 8** - Identify and authenticate users | API key authentication |
+| **Requirement 10** - Track and monitor access | Immutable audit logs |
+| **Requirement 12** - Security policy | Documentation provided |
+
+### Credit Card Protection
+
+Aptly automatically detects and redacts credit card numbers:
+
+```python
+request = {
+    "model": "gpt-4",
+    "messages": [
+        {
+            "role": "user",
+            "content": "Process payment for card 4111-1111-1111-1111"
+        }
+    ],
+    "api_keys": {"openai": "sk-..."}
+}
+
+# LLM receives: "Process payment for card CREDIT_CARD_A"
+```
+
+### PCI-DSS Configuration
+
+```python
+# Configure for PCI-DSS
+requests.patch(
+    "https://api-aptly.nsquaredlabs.com/v1/me",
+    headers={"Authorization": "Bearer apt_live_xyz789"},
+    json={
+        "pii_redaction_mode": "remove",  # Maximum protection for card data
+        "compliance_frameworks": ["PCI-DSS"]
+    }
+)
+```
+
+## Multi-Framework Configuration
+
+You can enable multiple frameworks:
+
+```python
+# Healthcare + enterprise
+requests.patch(
+    "https://api-aptly.nsquaredlabs.com/v1/me",
+    headers={"Authorization": "Bearer apt_live_xyz789"},
+    json={
+        "compliance_frameworks": ["HIPAA", "SOC2", "GDPR"]
+    }
+)
+```
+
+## Compliance Checklist
+
+### Pre-Production
+
+- [ ] Configure appropriate PII redaction mode
+- [ ] Set compliance frameworks
+- [ ] Review retention policy
+- [ ] Test PII redaction with sample data
+- [ ] Document your compliance approach
+- [ ] Train team on best practices
+
+### Production
+
+- [ ] Monitor audit logs regularly
+- [ ] Review PII detection accuracy
+- [ ] Track response PII detection (if needed)
+- [ ] Generate compliance reports
+- [ ] Maintain documentation
+
+### Ongoing
+
+- [ ] Quarterly audit log reviews
+- [ ] Annual compliance assessment
+- [ ] Update procedures as regulations change
+- [ ] Train new team members
+
+## Generating Compliance Reports
+
+### Monthly Report
+
+```python
+def generate_compliance_report(api_key, month, year):
+    """Generate monthly compliance report."""
+    import json
+    from datetime import datetime
+
+    # Fetch all logs for the month
+    start_date = f"{year}-{month:02d}-01"
+    if month == 12:
+        end_date = f"{year + 1}-01-01"
+    else:
+        end_date = f"{year}-{month + 1:02d}-01"
+
+    all_logs = []
+    page = 1
+    while True:
+        response = requests.get(
+            "https://api-aptly.nsquaredlabs.com/v1/logs",
+            headers={"Authorization": f"Bearer {api_key}"},
+            params={
+                "start_date": start_date,
+                "end_date": end_date,
+                "limit": 100,
+                "page": page
+            }
+        )
+        result = response.json()
+        all_logs.extend(result['logs'])
+
+        if page >= result['pagination']['total_pages']:
+            break
+        page += 1
+
+    # Analyze
+    report = {
+        "period": f"{year}-{month:02d}",
+        "total_requests": len(all_logs),
+        "pii_detected_count": sum(1 for log in all_logs if log['pii_detected_input']),
+        "unique_users": len(set(log.get('user_id') for log in all_logs if log.get('user_id'))),
+        "models_used": list(set(log['model'] for log in all_logs)),
+        "generated_at": datetime.now().isoformat()
+    }
+
+    # Save report
+    with open(f'compliance_report_{year}_{month:02d}.json', 'w') as f:
+        json.dump(report, f, indent=2)
+
+    print(f"✓ Compliance report generated")
+    print(f"  Period: {report['period']}")
+    print(f"  Total requests: {report['total_requests']}")
+    print(f"  PII detected: {report['pii_detected_count']}")
+
+    return report
+```
+
+## Best Practices
+
+1. **Choose appropriate redaction mode** - Balance privacy and functionality
+2. **Document your configuration** - Keep records for audits
+3. **Regular log reviews** - Monitor compliance effectiveness
+4. **Train your team** - Ensure everyone understands compliance
+5. **Stay updated** - Regulations evolve, adjust accordingly
+
+## Limitations
+
+<Warning>
+  Aptly provides tools to help with compliance, but **does not guarantee compliance**. You are responsible for:
+
+  - Properly configuring the service
+  - Following your organization's policies
+  - Training your team
+  - Conducting audits
+  - Maintaining documentation
+</Warning>
+
+## Getting Help
+
+For compliance questions:
+- Review the [PII Redaction Guide](/guides/pii-redaction)
+- Check [Audit Logs documentation](/api/audit-logs/query-logs)
+- Contact your legal/compliance team
+- Consult with compliance professionals
+
+## Related Documentation
+
+- [PII Redaction Guide](/guides/pii-redaction) - Understand data protection
+- [Update Settings](/api/customer/update-settings) - Configure frameworks
+- [Query Audit Logs](/api/audit-logs/query-logs) - Review compliance data
+- [Get Log Detail](/api/audit-logs/get-log) - Detailed audit information

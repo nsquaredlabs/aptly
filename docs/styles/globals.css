@@ -1,0 +1,57 @@
+/* Custom global styles for Aptly docs */
+
+:root {
+  --aptly-blue: #3b82f6;
+  --aptly-blue-light: #60a5fa;
+  --aptly-blue-dark: #2563eb;
+}
+
+/* Enhance code blocks */
+pre {
+  border-radius: 0.5rem !important;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #4b5563;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+/* Improve link colors */
+.nx-text-primary-600 {
+  color: var(--aptly-blue) !important;
+}
+
+.dark .nx-text-primary-600 {
+  color: var(--aptly-blue-light) !important;
+}
+
+/* Card hover effects */
+.nx-border:hover {
+  border-color: var(--aptly-blue-light);
+}
+
+.dark .nx-border:hover {
+  border-color: var(--aptly-blue-dark);
+}

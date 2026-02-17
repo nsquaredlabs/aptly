@@ -6,6 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Aptly is a compliance-as-a-service middleware API that proxies LLM requests while handling PII redaction and audit logging. It provides an OpenAI-compatible API interface for organizations that need to use LLMs while maintaining compliance and protecting sensitive data.
 
+**API Base URL:** https://aptly-api.nsquaredlabs.com
+**Website Base URL:** https://aptly.nsquaredlabs.com
+**Documentation Base URL:** https://aptly.nsquaredlabs.com/docs
+
 **Key principle:** Working software over theoretical completeness. Every endpoint must be usable from day one.
 
 ## Development Commands
@@ -99,13 +103,6 @@ Tests mock the Supabase client and external dependencies. Critical test cases th
 - `test_api_key_validation` - Valid key authenticates
 
 Coverage target: >80%
-
-## Skills
-
-- `/plan-next [focus area]` - Analyzes work summaries, PRDs, spec, and codebase to identify and write the next PRD
-- `/implement <prd-or-feature>` - Reads existing PRD, implements requirements, writes summary to `project-docs/work-summaries/`
-
-Typical workflow: `/plan-next` → review PRD → `/implement <prd-path>`
 
 ## Database
 

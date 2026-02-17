@@ -1,0 +1,604 @@
+---
+title: "Streaming Guide"
+description: "Using Server-Sent Events (SSE) streaming for real-time LLM responses"
+---
+
+Aptly supports streaming responses using Server-Sent Events (SSE), allowing you to display LLM output in real-time as it's generated. This guide explains how streaming works and how to implement it in your application.
+
+## Why Use Streaming
+
+Streaming provides a better user experience by:
+
+- **Instant feedback** - Users see responses immediately
+- **Perceived performance** - Feels faster even if total time is the same
+- **Progressive disclosure** - Long responses arrive incrementally
+- **Real-time UX** - Like ChatGPT's typing effect
+
+**When to use streaming:**
+- Interactive chat interfaces
+- Long-form content generation
+- User-facing applications
+- Real-time assistants
+
+**When not to use streaming:**
+- Batch processing
+- Background jobs
+- Automated workflows
+- When you need the complete response at once
+
+## How It Works
+
+When `stream: true` is set:
+
+1. **Request sent** - With streaming enabled
+2. **Connection opened** - Long-lived HTTP connection
+3. **Chunks arrive** - LLM generates text incrementally
+4. **Events streamed** - Each chunk sent as SSE event
+5. **Connection closed** - When complete
+
+## Basic Streaming Example
+
+<CodeGroup>
+
+```python Python
+import requests
+import json
+
+response = requests.post(
+    "https://api-aptly.nsquaredlabs.com/v1/chat/completions",
+    headers={
+        "Authorization": "Bearer apt_live_xyz789",
+        "Content-Type": "application/json"
+    },
+    json={
+        "model": "gpt-4",
+        "messages": [
+            {"role": "user", "content": "Write a short poem about AI"}
+        ],
+        "api_keys": {"openai": "sk-..."},
+        "stream": True  # Enable streaming
+    },
+    stream=True  # Important: enable streaming at HTTP level
+)
+
+# Process Server-Sent Events
+for line in response.iter_lines():
+    if line:
+        line_text = line.decode('utf-8')
+
+        # SSE format: "data: {json}"
+        if line_text.startswith('data: '):
+            data = line_text[6:]  # Remove "data: " prefix
+
+            # Check for end of stream
+            if data == '[DONE]':
+                print("\n✓ Stream complete")
+                break
+
+            # Parse JSON chunk
+            chunk = json.loads(data)
+
+            # Extract content
+            delta = chunk['choices'][0]['delta']
+            content = delta.get('content', '')
+
+            if content:
+                print(content, end='', flush=True)
+```
+
+```javascript JavaScript (Node.js)
+import fetch from 'node-fetch';
+
+const response = await fetch('https://api-aptly.nsquaredlabs.com/v1/chat/completions', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer apt_live_xyz789',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    model: 'gpt-4',
+    messages: [
+      {role: 'user', content: 'Write a short poem about AI'}
+    ],
+    api_keys: {openai: 'sk-...'},
+    stream: true
+  })
+});
+
+// Process stream
+const reader = response.body;
+
+for await (const chunk of reader) {
+  const lines = chunk.toString().split('\n');
+
+  for (const line of lines) {
+    if (line.startsWith('data: ')) {
+      const data = line.slice(6);
+
+      if (data === '[DONE]') {
+        console.log('\n✓ Stream complete');
+        break;
+      }
+
+      try {
+        const parsed = JSON.parse(data);
+        const content = parsed.choices[0].delta.content;
+
+        if (content) {
+          process.stdout.write(content);
+        }
+      } catch (e) {
+        // Skip invalid JSON
+      }
+    }
+  }
+}
+```
+
+```bash cURL
+curl -X POST "https://api-aptly.nsquaredlabs.com/v1/chat/completions" \
+  -H "Authorization: Bearer apt_live_xyz789" \
+  -H "Content-Type: application/json" \
+  -N \
+  --data '{
+    "model": "gpt-4",
+    "messages": [
+      {"role": "user", "content": "Write a short poem"}
+    ],
+    "api_keys": {"openai": "sk-..."},
+    "stream": true
+  }'
+```
+
+</CodeGroup>
+
+## SSE Event Format
+
+Each event follows Server-Sent Events format:
+
+```
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"content":"Hello"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"content":" world"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"content":"!"},"finish_reason":"stop"}]}
+
+data: [DONE]
+```
+
+### Chunk Structure
+
+Each chunk is a JSON object:
+
+```json
+{
+  "id": "chatcmpl-abc123",
+  "object": "chat.completion.chunk",
+  "model": "gpt-4",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "role": "assistant",    // Only in first chunk
+        "content": "Hello "     // Text fragment
+      },
+      "finish_reason": null     // null until final chunk
+    }
+  ]
+}
+```
+
+**Key fields:**
+- `delta.content` - Text fragment to display
+- `delta.role` - Only present in first chunk
+- `finish_reason` - `null` during stream, `"stop"` when complete
+
+## React Example
+
+Implement streaming in a React component:
+
+```jsx
+import { useState } from 'react';
+
+function ChatInterface() {
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  async function sendMessage(userMessage) {
+    // Add user message
+    setMessages(prev => [...prev, {
+      role: 'user',
+      content: userMessage
+    }]);
+
+    setLoading(true);
+
+    // Start streaming
+    const response = await fetch('https://api-aptly.nsquaredlabs.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer apt_live_xyz789',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'gpt-4',
+        messages: [...messages, {role: 'user', content: userMessage}],
+        api_keys: {openai: 'sk-...'},
+        stream: true
+      })
+    });
+
+    // Create assistant message
+    let assistantMessage = '';
+    setMessages(prev => [...prev, {
+      role: 'assistant',
+      content: ''
+    }]);
+
+    // Process stream
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const {done, value} = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value);
+      const lines = chunk.split('\n');
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const data = line.slice(6);
+
+          if (data === '[DONE]') {
+            setLoading(false);
+            break;
+          }
+
+          try {
+            const parsed = JSON.parse(data);
+            const content = parsed.choices[0].delta.content;
+
+            if (content) {
+              assistantMessage += content;
+
+              // Update last message
+              setMessages(prev => {
+                const newMessages = [...prev];
+                newMessages[newMessages.length - 1].content = assistantMessage;
+                return newMessages;
+              });
+            }
+          } catch (e) {
+            // Skip invalid JSON
+          }
+        }
+      }
+    }
+  }
+
+  return (
+    <div>
+      {messages.map((msg, i) => (
+        <div key={i} className={msg.role}>
+          {msg.content}
+        </div>
+      ))}
+      {loading && <div className="typing-indicator">...</div>}
+    </div>
+  );
+}
+```
+
+## PII Redaction with Streaming
+
+PII is redacted **before** streaming begins:
+
+```python
+# Input
+messages = [
+    {"role": "user", "content": "My name is John Smith"}
+]
+
+# Aptly redacts first:
+# "My name is PERSON_A"
+
+# Then streams LLM response:
+for chunk in stream:
+    print(chunk['delta']['content'], end='')
+# Output: "Hello PERSON_A! How can I help you?"
+```
+
+The redacted messages are sent to the LLM, so the stream contains redacted references.
+
+## Error Handling
+
+Handle errors during streaming:
+
+```python
+import requests
+import json
+
+def stream_with_error_handling(api_key, payload):
+    """Stream with comprehensive error handling."""
+    try:
+        response = requests.post(
+            "https://api-aptly.nsquaredlabs.com/v1/chat/completions",
+            headers={"Authorization": f"Bearer {api_key}"},
+            json={**payload, "stream": True},
+            stream=True,
+            timeout=60  # Add timeout
+        )
+
+        # Check initial response
+        if response.status_code != 200:
+            error = response.json()
+            print(f"Error: {error}")
+            return
+
+        # Process stream
+        for line in response.iter_lines():
+            if not line:
+                continue
+
+            line_text = line.decode('utf-8')
+
+            if line_text.startswith('data: '):
+                data = line_text[6:]
+
+                if data == '[DONE]':
+                    print("\n✓ Complete")
+                    break
+
+                try:
+                    chunk = json.loads(data)
+
+                    # Check for errors in chunk
+                    if 'error' in chunk:
+                        print(f"\nError in stream: {chunk['error']}")
+                        break
+
+                    content = chunk['choices'][0]['delta'].get('content', '')
+                    if content:
+                        print(content, end='', flush=True)
+
+                except json.JSONDecodeError as e:
+                    print(f"\nJSON error: {e}")
+                    continue
+
+    except requests.exceptions.Timeout:
+        print("\nRequest timed out")
+    except requests.exceptions.RequestException as e:
+        print(f"\nRequest error: {e}")
+    except KeyboardInterrupt:
+        print("\n\nInterrupted by user")
+
+# Usage
+stream_with_error_handling(
+    "apt_live_xyz789",
+    {
+        "model": "gpt-4",
+        "messages": [{"role": "user", "content": "Hello"}],
+        "api_keys": {"openai": "sk-..."}
+    }
+)
+```
+
+## Streaming vs Non-Streaming
+
+| Aspect | Non-Streaming | Streaming |
+|--------|---------------|-----------|
+| **Response time** | Wait for full response | See output immediately |
+| **UX** | Feels slower | Feels faster |
+| **Complexity** | Simple | Requires SSE handling |
+| **Use case** | Background jobs | Interactive UIs |
+| **Audit log** | Same | Same (complete response logged) |
+
+## Advanced: Streaming with Queue
+
+Process multiple streaming requests with a queue:
+
+```python
+import queue
+import threading
+import requests
+import json
+
+class StreamingQueue:
+    """Queue for streaming requests."""
+
+    def __init__(self, api_key):
+        self.api_key = api_key
+        self.queue = queue.Queue()
+        self.results = {}
+
+    def start(self):
+        """Start processing queue."""
+        threading.Thread(target=self._process, daemon=True).start()
+
+    def enqueue(self, request_id, payload, callback):
+        """Add streaming request to queue."""
+        self.queue.put((request_id, payload, callback))
+
+    def _process(self):
+        """Process queued streaming requests."""
+        while True:
+            request_id, payload, callback = self.queue.get()
+
+            try:
+                response = requests.post(
+                    "https://api-aptly.nsquaredlabs.com/v1/chat/completions",
+                    headers={"Authorization": f"Bearer {self.api_key}"},
+                    json={**payload, "stream": True},
+                    stream=True
+                )
+
+                accumulated = ""
+
+                for line in response.iter_lines():
+                    if not line:
+                        continue
+
+                    line_text = line.decode('utf-8')
+
+                    if line_text.startswith('data: '):
+                        data = line_text[6:]
+
+                        if data == '[DONE]':
+                            # Final callback with complete text
+                            callback(request_id, accumulated, done=True)
+                            break
+
+                        try:
+                            chunk = json.loads(data)
+                            content = chunk['choices'][0]['delta'].get('content', '')
+
+                            if content:
+                                accumulated += content
+                                # Incremental callback
+                                callback(request_id, content, done=False)
+
+                        except json.JSONDecodeError:
+                            continue
+
+            except Exception as e:
+                callback(request_id, f"Error: {e}", done=True, error=True)
+
+            finally:
+                self.queue.task_done()
+
+# Usage
+def on_chunk(request_id, content, done=False, error=False):
+    """Callback for each chunk."""
+    if error:
+        print(f"\n[{request_id}] Error: {content}")
+    elif done:
+        print(f"\n[{request_id}] ✓ Complete")
+    else:
+        print(f"[{request_id}] {content}", end='', flush=True)
+
+queue_manager = StreamingQueue("apt_live_xyz789")
+queue_manager.start()
+
+# Enqueue multiple streaming requests
+for i in range(5):
+    queue_manager.enqueue(
+        f"request_{i}",
+        {
+            "model": "gpt-4",
+            "messages": [{"role": "user", "content": f"Count to {i+5}"}],
+            "api_keys": {"openai": "sk-..."}
+        },
+        on_chunk
+    )
+```
+
+## Best Practices
+
+### 1. Set Timeouts
+
+Always set timeouts for streaming requests:
+
+```python
+response = requests.post(
+    ...,
+    stream=True,
+    timeout=60  # 60 second timeout
+)
+```
+
+### 2. Handle Connection Loss
+
+Implement reconnection logic for dropped connections.
+
+### 3. Buffer Partial Content
+
+Some LLM providers send partial words - buffer if needed:
+
+```python
+buffer = ""
+
+for line in response.iter_lines():
+    # ... parse chunk ...
+
+    buffer += content
+
+    # Display complete words only
+    if ' ' in buffer:
+        words = buffer.split(' ')
+        display_words = ' '.join(words[:-1])
+        buffer = words[-1]
+
+        print(display_words, end=' ', flush=True)
+
+# Display remaining buffer
+print(buffer)
+```
+
+### 4. Show Progress Indicator
+
+Display a loading indicator while streaming:
+
+```python
+import sys
+
+# Before streaming
+sys.stdout.write("Thinking")
+sys.stdout.flush()
+
+# During stream
+for chunk in stream:
+    # Clear "Thinking"
+    sys.stdout.write('\r' + ' ' * 20 + '\r')
+    # Show content
+    print(chunk, end='', flush=True)
+```
+
+### 5. Log Complete Response
+
+Even with streaming, the complete response is logged in audit logs:
+
+```python
+# Stream to user
+for chunk in stream:
+    display(chunk)
+
+# Complete response still appears in audit logs
+logs = requests.get(
+    "https://api-aptly.nsquaredlabs.com/v1/logs",
+    headers={"Authorization": "Bearer apt_live_xyz789"}
+).json()
+
+# Last log has complete response
+last_log = logs['logs'][0]
+print(f"Complete: {last_log['response_content']}")
+```
+
+## Troubleshooting
+
+### Stream Not Starting
+
+If no events arrive:
+- Check `stream: True` in JSON payload
+- Check `stream=True` in HTTP client
+- Verify network supports long-lived connections
+
+### Incomplete Chunks
+
+If chunks are cut off:
+- Check for buffering in proxies/CDNs
+- Increase timeout values
+- Check connection stability
+
+### Performance Issues
+
+If streaming is slow:
+- Check network latency
+- Use faster LLM models
+- Reduce input message length
+
+## Related Documentation
+
+- [Chat Completions API](/api/chat-completions) - Main endpoint with streaming support
+- [PII Redaction Guide](/guides/pii-redaction) - How PII redaction works with streaming
+- [Query Audit Logs](/api/audit-logs/query-logs) - Review streamed responses

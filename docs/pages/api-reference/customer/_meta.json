@@ -1,0 +1,7 @@
+{
+  "get-profile": "Get Profile",
+  "update-settings": "Update Settings",
+  "list-keys": "List API Keys",
+  "create-key": "Create API Key",
+  "revoke-key": "Revoke API Key"
+}

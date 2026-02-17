@@ -1,0 +1,410 @@
+---
+title: "Create API Key for Customer"
+api: "POST /v1/admin/customers/{customer_id}/api-keys"
+description: "Generate an additional API key for an existing customer"
+---
+
+Create a new API key for a customer with custom name and rate limit. This is useful when customers need multiple keys for different environments or teams.
+
+## Authentication
+
+<ParamField header="X-Admin-Secret" type="string" required>
+  The admin secret configured in your `APTLY_ADMIN_SECRET` environment variable
+</ParamField>
+
+## Path Parameters
+
+<ParamField path="customer_id" type="string" required>
+  The unique customer identifier (e.g., `cus_abc123`)
+</ParamField>
+
+## Request Body
+
+<ParamField body="name" type="string" required>
+  Human-readable name for the key (e.g., "Production Key", "Staging Environment")
+</ParamField>
+
+<ParamField body="rate_limit_per_hour" type="integer" required>
+  Requests per hour allowed for this key
+
+  Common values:
+  - **100**: Free tier / development
+  - **1000**: Pro tier / production
+  - **5000**: Enterprise tier
+</ParamField>
+
+## Response
+
+<ResponseField name="id" type="string" required>
+  Unique key identifier
+</ResponseField>
+
+<ResponseField name="key" type="string" required>
+  **The full API key** (e.g., `apt_live_xyz789...`)
+
+  <Warning>
+    This is the **only time** the full key is returned. Store it securely and provide it to the customer. It cannot be retrieved again.
+  </Warning>
+</ResponseField>
+
+<ResponseField name="key_prefix" type="string" required>
+  First 12 characters of the key (for identification)
+</ResponseField>
+
+<ResponseField name="name" type="string" required>
+  The name provided for this key
+</ResponseField>
+
+<ResponseField name="rate_limit_per_hour" type="integer" required>
+  Requests per hour allowed
+</ResponseField>
+
+<ResponseField name="created_at" type="string" required>
+  ISO 8601 timestamp of key creation
+</ResponseField>
+
+## Example Requests
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST "https://api-aptly.nsquaredlabs.com/v1/admin/customers/cus_abc123/api-keys" \
+  -H "X-Admin-Secret: your-admin-secret" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Production API Key",
+    "rate_limit_per_hour": 1000
+  }'
+```
+
+```python Python
+import requests
+
+customer_id = "cus_abc123"
+
+response = requests.post(
+    f"https://api-aptly.nsquaredlabs.com/v1/admin/customers/{customer_id}/api-keys",
+    headers={
+        "X-Admin-Secret": "your-admin-secret",
+        "Content-Type": "application/json"
+    },
+    json={
+        "name": "Production API Key",
+        "rate_limit_per_hour": 1000
+    }
+)
+
+result = response.json()
+
+# CRITICAL: Save this API key - it won't be shown again!
+api_key = result["key"]
+print(f"New API Key: {api_key}")
+print(f"Key ID: {result['id']}")
+print(f"Rate Limit: {result['rate_limit_per_hour']}/hour")
+```
+
+```javascript JavaScript
+const customerId = 'cus_abc123';
+
+const response = await fetch(
+  `https://api-aptly.nsquaredlabs.com/v1/admin/customers/${customerId}/api-keys`,
+  {
+    method: 'POST',
+    headers: {
+      'X-Admin-Secret': 'your-admin-secret',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      name: 'Production API Key',
+      rate_limit_per_hour: 1000
+    })
+  }
+);
+
+const result = await response.json();
+
+// CRITICAL: Save this API key!
+console.log('New API Key:', result.key);
+console.log('Rate Limit:', result.rate_limit_per_hour);
+```
+
+</CodeGroup>
+
+## Response Examples
+
+<ResponseExample>
+
+```json 201 - Created
+{
+  "id": "key_xyz789",
+  "key": "apt_live_abc123def456ghi789jkl012mno345pqr678",
+  "key_prefix": "apt_live_abc",
+  "name": "Production API Key",
+  "rate_limit_per_hour": 1000,
+  "created_at": "2026-01-31T12:00:00Z"
+}
+```
+
+```json 404 - Customer Not Found
+{
+  "error": {
+    "type": "not_found",
+    "message": "Customer not found",
+    "code": "NOT_FOUND"
+  }
+}
+```
+
+```json 401 - Unauthorized
+{
+  "detail": "Invalid admin secret"
+}
+```
+
+```json 400 - Bad Request
+{
+  "detail": [
+    {
+      "type": "missing",
+      "loc": ["body", "name"],
+      "msg": "Field required"
+    }
+  ]
+}
+```
+
+</ResponseExample>
+
+## Use Cases
+
+### Generate Environment-Specific Keys
+
+Create separate keys for development, staging, and production:
+
+```python
+import requests
+
+def create_environment_keys(customer_id, admin_secret):
+    """Create API keys for different environments."""
+    environments = [
+        {"name": "Production", "rate_limit": 1000},
+        {"name": "Staging", "rate_limit": 500},
+        {"name": "Development", "rate_limit": 100},
+    ]
+
+    keys = {}
+    for env in environments:
+        response = requests.post(
+            f"https://api-aptly.nsquaredlabs.com/v1/admin/customers/{customer_id}/api-keys",
+            headers={
+                "X-Admin-Secret": admin_secret,
+                "Content-Type": "application/json"
+            },
+            json={
+                "name": f"{env['name']} API Key",
+                "rate_limit_per_hour": env['rate_limit']
+            }
+        )
+        result = response.json()
+        keys[env['name'].lower()] = result['key']
+
+        print(f"✓ Created {env['name']} key: {result['key_prefix']}")
+
+    # Save keys to secure storage
+    return keys
+
+# Usage
+keys = create_environment_keys("cus_abc123", "your-admin-secret")
+# Store keys['production'], keys['staging'], keys['development'] securely
+```
+
+### Team-Specific Keys
+
+Generate keys for different teams with appropriate rate limits:
+
+```python
+def create_team_keys(customer_id, admin_secret):
+    """Create API keys for different teams."""
+    teams = {
+        "Backend Team": 800,
+        "Frontend Team": 500,
+        "Mobile Team": 300,
+        "QA Team": 200,
+    }
+
+    for team_name, rate_limit in teams.items():
+        response = requests.post(
+            f"https://api-aptly.nsquaredlabs.com/v1/admin/customers/{customer_id}/api-keys",
+            headers={"X-Admin-Secret": admin_secret},
+            json={
+                "name": team_name,
+                "rate_limit_per_hour": rate_limit
+            }
+        )
+        result = response.json()
+
+        print(f"✓ {team_name}: {result['key']}")
+        print(f"  Rate limit: {rate_limit}/hour")
+        print()
+```
+
+### Replace Compromised Key
+
+Generate a replacement key when one is compromised:
+
+```python
+def replace_compromised_key(customer_id, old_key_id, admin_secret):
+    """Generate replacement key and revoke the old one."""
+
+    # Create new key with same rate limit as old one
+    # (In production, you'd fetch the old key's rate limit first)
+    response = requests.post(
+        f"https://api-aptly.nsquaredlabs.com/v1/admin/customers/{customer_id}/api-keys",
+        headers={"X-Admin-Secret": admin_secret},
+        json={
+            "name": "Replacement Key - Emergency",
+            "rate_limit_per_hour": 1000
+        }
+    )
+    new_key = response.json()
+
+    print(f"✓ New key created: {new_key['key']}")
+    print(f"  Key ID: {new_key['id']}")
+    print()
+    print("⚠ NEXT STEPS:")
+    print("1. Provide new key to customer immediately")
+    print("2. Customer updates their application with new key")
+    print("3. Verify new key is working")
+    print(f"4. Revoke old key: DELETE /v1/api-keys/{old_key_id}")
+
+    return new_key
+
+# Usage
+new_key = replace_compromised_key("cus_abc123", "key_old123", "admin-secret")
+```
+
+### Bulk Key Generation
+
+Generate multiple keys at once (e.g., for a large customer with many teams):
+
+```python
+import csv
+
+def bulk_create_keys(customer_id, admin_secret, csv_file):
+    """
+    Create multiple API keys from CSV.
+
+    CSV format:
+    name,rate_limit_per_hour
+    Team Alpha,1000
+    Team Beta,500
+    """
+    created_keys = []
+
+    with open(csv_file, 'r') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            try:
+                response = requests.post(
+                    f"https://api-aptly.nsquaredlabs.com/v1/admin/customers/{customer_id}/api-keys",
+                    headers={"X-Admin-Secret": admin_secret},
+                    json={
+                        "name": row['name'],
+                        "rate_limit_per_hour": int(row['rate_limit_per_hour'])
+                    }
+                )
+                result = response.json()
+                created_keys.append(result)
+
+                print(f"✓ Created: {row['name']}")
+
+            except Exception as e:
+                print(f"✗ Failed: {row['name']} - {e}")
+
+    # Save all keys to secure storage
+    with open('created_keys.json', 'w') as f:
+        import json
+        json.dump(created_keys, f, indent=2)
+
+    print(f"\n✓ Created {len(created_keys)} keys")
+    print("Keys saved to created_keys.json - distribute securely!")
+
+    return created_keys
+```
+
+## Rate Limit Guidelines
+
+Choose appropriate rate limits based on use case:
+
+| Use Case | Recommended Limit | Notes |
+|----------|------------------|-------|
+| **Development** | 100/hour | Testing and development environments |
+| **Staging** | 500/hour | Pre-production testing |
+| **Production (Small)** | 1,000/hour | Small-scale production apps |
+| **Production (Medium)** | 5,000/hour | Medium-scale production apps |
+| **Production (Large)** | 10,000/hour | High-volume production apps |
+| **Enterprise** | Custom | Contact support for higher limits |
+
+<Note>
+  Rate limits are per API key, not per customer. A customer with 3 keys can make 3x the requests.
+</Note>
+
+## Security Best Practices
+
+### Immediate Storage
+
+<Warning>
+  The full API key is only returned **once**. You must capture and store it immediately.
+</Warning>
+
+**Recommended workflow:**
+
+```python
+# 1. Create the key
+result = create_api_key(customer_id, "Production", 1000)
+api_key = result["key"]
+
+# 2. Immediately store in secrets manager
+secrets_manager.store(f"aptly_{customer_id}_{result['id']}", api_key)
+
+# 3. Send to customer via secure channel (not email!)
+send_secure_notification(customer_email, api_key)
+
+# 4. Clear from memory
+api_key = None
+del result
+```
+
+### Key Distribution
+
+Never send API keys via:
+- ❌ Email (not encrypted)
+- ❌ Slack/Discord (logged forever)
+- ❌ SMS (insecure)
+
+Instead, use:
+- ✅ Password managers (1Password, LastPass)
+- ✅ Secrets managers (HashiCorp Vault, AWS Secrets Manager)
+- ✅ Encrypted messaging (Signal, with disappearing messages)
+- ✅ In-person secure handoff
+
+### Naming Conventions
+
+Use descriptive names that help identify keys:
+
+**Good:**
+- "Production - Web App"
+- "Staging - API v2"
+- "Team Backend - Microservices"
+
+**Bad:**
+- "Key 1"
+- "Test"
+- "asdf"
+
+## Related Endpoints
+
+- [Get Customer](/api/admin/get-customer) - View all customer API keys
+- [List API Keys](/api/customer/list-keys) - Customer endpoint to view their own keys
+- [Revoke API Key](/api/customer/revoke-key) - Revoke a key
+- [Create Customer](/api/admin/create-customer) - Creates customer with initial key

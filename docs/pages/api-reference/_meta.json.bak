@@ -1,0 +1,8 @@
+{
+  "health": "Health Check",
+  "chat-completions": "Chat Completions",
+  "admin": "Admin",
+  "customer": "Your Account",
+  "audit-logs": "Audit Logs",
+  "analytics": "Analytics"
+}

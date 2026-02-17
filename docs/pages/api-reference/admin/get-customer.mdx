@@ -1,0 +1,422 @@
+---
+title: "Get Customer"
+api: "GET /v1/admin/customers/{customer_id}"
+description: "Retrieve detailed information about a specific customer including API keys and usage statistics"
+---
+
+Get comprehensive details about a customer, including their profile, all API keys, and current month's usage statistics.
+
+## Authentication
+
+<ParamField header="X-Admin-Secret" type="string" required>
+  The admin secret configured in your `APTLY_ADMIN_SECRET` environment variable
+</ParamField>
+
+## Path Parameters
+
+<ParamField path="customer_id" type="string" required>
+  The unique customer identifier (e.g., `cus_abc123`)
+</ParamField>
+
+## Response
+
+<ResponseField name="customer" type="object" required>
+  Customer profile information
+
+  <Expandable title="customer">
+    <ResponseField name="id" type="string">
+      Unique customer identifier
+    </ResponseField>
+
+    <ResponseField name="email" type="string">
+      Customer's email address
+    </ResponseField>
+
+    <ResponseField name="company_name" type="string">
+      Company or organization name
+    </ResponseField>
+
+    <ResponseField name="plan" type="string">
+      Subscription plan (`free` or `pro`)
+    </ResponseField>
+
+    <ResponseField name="compliance_frameworks" type="array">
+      List of compliance frameworks
+    </ResponseField>
+
+    <ResponseField name="retention_days" type="integer">
+      Audit log retention period in days
+    </ResponseField>
+
+    <ResponseField name="pii_redaction_mode" type="string">
+      PII redaction mode: `mask`, `hash`, or `remove`
+    </ResponseField>
+
+    <ResponseField name="created_at" type="string">
+      ISO 8601 timestamp of creation
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="api_keys" type="array" required>
+  All API keys for this customer (excluding full key values)
+
+  <Expandable title="api_key object">
+    <ResponseField name="id" type="string">
+      Unique key identifier
+    </ResponseField>
+
+    <ResponseField name="key_prefix" type="string">
+      First 12 characters of the key (e.g., `apt_live_xyz`)
+    </ResponseField>
+
+    <ResponseField name="name" type="string">
+      Key name for identification
+    </ResponseField>
+
+    <ResponseField name="is_revoked" type="boolean">
+      Whether the key has been revoked
+    </ResponseField>
+
+    <ResponseField name="rate_limit_per_hour" type="integer">
+      Requests per hour allowed for this key
+    </ResponseField>
+
+    <ResponseField name="created_at" type="string">
+      ISO 8601 timestamp of key creation
+    </ResponseField>
+
+    <ResponseField name="last_used_at" type="string">
+      ISO 8601 timestamp of last use (null if never used)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="usage" type="object" required>
+  Current month's usage statistics
+
+  <Expandable title="usage">
+    <ResponseField name="requests_this_month" type="integer">
+      Total API requests this month
+    </ResponseField>
+
+    <ResponseField name="tokens_this_month" type="integer">
+      Total tokens used this month
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Example Requests
+
+<CodeGroup>
+
+```bash cURL
+curl "https://api-aptly.nsquaredlabs.com/v1/admin/customers/cus_abc123" \
+  -H "X-Admin-Secret: your-admin-secret"
+```
+
+```python Python
+import requests
+
+customer_id = "cus_abc123"
+
+response = requests.get(
+    f"https://api-aptly.nsquaredlabs.com/v1/admin/customers/{customer_id}",
+    headers={"X-Admin-Secret": "your-admin-secret"}
+)
+
+result = response.json()
+
+print(f"Customer: {result['customer']['email']}")
+print(f"Plan: {result['customer']['plan']}")
+print(f"API Keys: {len(result['api_keys'])}")
+print(f"Requests this month: {result['usage']['requests_this_month']}")
+print(f"Tokens this month: {result['usage']['tokens_this_month']}")
+```
+
+```javascript JavaScript
+const customerId = 'cus_abc123';
+
+const response = await fetch(
+  `https://api-aptly.nsquaredlabs.com/v1/admin/customers/${customerId}`,
+  {
+    headers: {
+      'X-Admin-Secret': 'your-admin-secret'
+    }
+  }
+);
+
+const result = await response.json();
+
+console.log(`Customer: ${result.customer.email}`);
+console.log(`Plan: ${result.customer.plan}`);
+console.log(`API Keys: ${result.api_keys.length}`);
+console.log(`Requests: ${result.usage.requests_this_month}`);
+```
+
+</CodeGroup>
+
+## Response Examples
+
+<ResponseExample>
+
+```json 200 - Success
+{
+  "customer": {
+    "id": "cus_abc123",
+    "email": "admin@company.com",
+    "company_name": "Acme Corporation",
+    "plan": "pro",
+    "compliance_frameworks": ["HIPAA", "SOC2"],
+    "retention_days": 2555,
+    "pii_redaction_mode": "mask",
+    "created_at": "2026-01-15T10:00:00Z"
+  },
+  "api_keys": [
+    {
+      "id": "key_xyz789",
+      "key_prefix": "apt_live_abc",
+      "name": "Production API Key",
+      "is_revoked": false,
+      "rate_limit_per_hour": 1000,
+      "created_at": "2026-01-15T10:00:00Z",
+      "last_used_at": "2026-01-31T09:45:00Z"
+    },
+    {
+      "id": "key_def456",
+      "key_prefix": "apt_test_ghi",
+      "name": "Development Key",
+      "is_revoked": false,
+      "rate_limit_per_hour": 100,
+      "created_at": "2026-01-20T14:30:00Z",
+      "last_used_at": "2026-01-30T16:20:00Z"
+    },
+    {
+      "id": "key_old123",
+      "key_prefix": "apt_live_old",
+      "name": "Old Key - Revoked",
+      "is_revoked": true,
+      "rate_limit_per_hour": 1000,
+      "created_at": "2026-01-10T08:00:00Z",
+      "last_used_at": "2026-01-14T22:10:00Z"
+    }
+  ],
+  "usage": {
+    "requests_this_month": 45230,
+    "tokens_this_month": 1250000
+  }
+}
+```
+
+```json 404 - Not Found
+{
+  "error": {
+    "type": "not_found",
+    "message": "Customer not found",
+    "code": "NOT_FOUND"
+  }
+}
+```
+
+```json 401 - Unauthorized
+{
+  "detail": "Invalid admin secret"
+}
+```
+
+</ResponseExample>
+
+## Use Cases
+
+### Customer Support Dashboard
+
+Display comprehensive customer information for support:
+
+```python
+import requests
+from datetime import datetime
+
+def get_customer_summary(customer_id, admin_secret):
+    response = requests.get(
+        f"https://api-aptly.nsquaredlabs.com/v1/admin/customers/{customer_id}",
+        headers={"X-Admin-Secret": admin_secret}
+    )
+    result = response.json()
+
+    customer = result['customer']
+    api_keys = result['api_keys']
+    usage = result['usage']
+
+    # Print summary
+    print("=" * 60)
+    print(f"CUSTOMER SUMMARY: {customer['email']}")
+    print("=" * 60)
+    print(f"\nCompany: {customer.get('company_name', 'N/A')}")
+    print(f"Plan: {customer['plan'].upper()}")
+    print(f"Compliance: {', '.join(customer.get('compliance_frameworks', []))}")
+    print(f"PII Mode: {customer['pii_redaction_mode']}")
+    print(f"Joined: {customer['created_at']}")
+
+    print(f"\n--- API KEYS ({len(api_keys)}) ---")
+    active_keys = [k for k in api_keys if not k['is_revoked']]
+    revoked_keys = [k for k in api_keys if k['is_revoked']]
+    print(f"Active: {len(active_keys)}")
+    print(f"Revoked: {len(revoked_keys)}")
+
+    for key in active_keys:
+        last_used = key.get('last_used_at', 'Never')
+        print(f"\n  {key['name']}")
+        print(f"  Prefix: {key['key_prefix']}")
+        print(f"  Rate Limit: {key['rate_limit_per_hour']}/hour")
+        print(f"  Last Used: {last_used}")
+
+    print(f"\n--- USAGE THIS MONTH ---")
+    print(f"Requests: {usage['requests_this_month']:,}")
+    print(f"Tokens: {usage['tokens_this_month']:,}")
+    print("=" * 60)
+
+# Usage
+get_customer_summary("cus_abc123", "your-admin-secret")
+```
+
+### Audit Inactive Keys
+
+Find customers with unused API keys:
+
+```python
+def audit_inactive_keys(customer_id, admin_secret):
+    """Find API keys that haven't been used recently."""
+    from datetime import datetime, timedelta, timezone
+
+    response = requests.get(
+        f"https://api-aptly.nsquaredlabs.com/v1/admin/customers/{customer_id}",
+        headers={"X-Admin-Secret": admin_secret}
+    )
+    result = response.json()
+
+    now = datetime.now(timezone.utc)
+    thirty_days_ago = now - timedelta(days=30)
+
+    inactive_keys = []
+    for key in result['api_keys']:
+        if key['is_revoked']:
+            continue
+
+        last_used = key.get('last_used_at')
+        if last_used is None:
+            inactive_keys.append(key)
+        else:
+            last_used_dt = datetime.fromisoformat(last_used.replace('Z', '+00:00'))
+            if last_used_dt < thirty_days_ago:
+                inactive_keys.append(key)
+
+    if inactive_keys:
+        print(f"⚠ {len(inactive_keys)} inactive keys found:")
+        for key in inactive_keys:
+            print(f"  - {key['name']} ({key['key_prefix']})")
+    else:
+        print("✓ All keys are active")
+
+    return inactive_keys
+```
+
+### Usage Monitoring
+
+Monitor customer usage and send alerts:
+
+```python
+def check_usage_limits(customer_id, admin_secret, alert_threshold=80):
+    """Alert if customer is approaching their usage limits."""
+    response = requests.get(
+        f"https://api-aptly.nsquaredlabs.com/v1/admin/customers/{customer_id}",
+        headers={"X-Admin-Secret": admin_secret}
+    )
+    result = response.json()
+
+    customer = result['customer']
+    usage = result['usage']
+
+    # Calculate estimated monthly limit based on rate limits
+    active_keys = [k for k in result['api_keys'] if not k['is_revoked']]
+    max_rate = max([k['rate_limit_per_hour'] for k in active_keys]) if active_keys else 0
+    monthly_limit = max_rate * 24 * 30  # Rough estimate
+
+    usage_percent = (usage['requests_this_month'] / monthly_limit * 100) if monthly_limit > 0 else 0
+
+    if usage_percent >= alert_threshold:
+        print(f"⚠ ALERT: {customer['email']} at {usage_percent:.1f}% of estimated limit")
+        print(f"  Requests: {usage['requests_this_month']:,} / ~{monthly_limit:,}")
+        return True
+    else:
+        print(f"✓ {customer['email']}: {usage_percent:.1f}% usage")
+        return False
+```
+
+### Export Customer Report
+
+Generate a detailed customer report:
+
+```python
+import json
+
+def export_customer_report(customer_id, admin_secret, filename):
+    """Export detailed customer report to JSON."""
+    response = requests.get(
+        f"https://api-aptly.nsquaredlabs.com/v1/admin/customers/{customer_id}",
+        headers={"X-Admin-Secret": admin_secret}
+    )
+    result = response.json()
+
+    # Add summary statistics
+    report = {
+        **result,
+        "summary": {
+            "total_api_keys": len(result['api_keys']),
+            "active_api_keys": sum(1 for k in result['api_keys'] if not k['is_revoked']),
+            "revoked_api_keys": sum(1 for k in result['api_keys'] if k['is_revoked']),
+            "generated_at": datetime.now(timezone.utc).isoformat()
+        }
+    }
+
+    with open(filename, 'w') as f:
+        json.dump(report, f, indent=2)
+
+    print(f"Report saved to {filename}")
+
+# Usage
+export_customer_report("cus_abc123", "your-admin-secret", "customer_report.json")
+```
+
+## Understanding Usage Statistics
+
+The `usage` object shows **current calendar month** statistics:
+
+- **requests_this_month**: Total API calls to `/v1/chat/completions`
+- **tokens_this_month**: Sum of input + output tokens across all requests
+
+These reset on the 1st of each month.
+
+## API Keys Information
+
+<Note>
+  Full API keys are **never** returned by this endpoint. Only the `key_prefix` (first 12 characters) is shown for security.
+</Note>
+
+To identify which key a customer is using:
+- Check `last_used_at` timestamp
+- Match `key_prefix` to the customer's records
+- Cross-reference with audit logs for detailed usage
+
+## Best Practices
+
+1. **Cache customer data** - This endpoint is relatively expensive; cache results for 5-10 minutes
+2. **Monitor usage trends** - Track `requests_this_month` to predict scaling needs
+3. **Audit inactive keys** - Regularly check `last_used_at` and prompt customers to revoke unused keys
+4. **Compliance tracking** - Use `compliance_frameworks` to ensure proper handling
+
+## Related Endpoints
+
+- [List Customers](/api/admin/list-customers) - Get all customers
+- [Create Customer](/api/admin/create-customer) - Add new customer
+- [Create API Key for Customer](/api/admin/create-api-key) - Generate additional keys
+- [Query Audit Logs](/api/audit-logs/query-logs) - View detailed request history

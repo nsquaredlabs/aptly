@@ -1,0 +1,6 @@
+{
+  "create-customer": "Create Customer",
+  "list-customers": "List Customers",
+  "get-customer": "Get Customer",
+  "create-api-key": "Create API Key"
+}
