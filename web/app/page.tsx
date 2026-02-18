@@ -18,6 +18,12 @@ export default function Home() {
             >
               ./docs
             </Link>
+            <Link
+              href="/api-reference"
+              className="text-gray-600 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors"
+            >
+              ./api
+            </Link>
           </div>
         </nav>
       </header>

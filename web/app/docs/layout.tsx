@@ -18,6 +18,9 @@ export default function DocsLayout({
               <Link href="/docs" className="text-gray-600 hover:text-gray-900">
                 Documentation
               </Link>
+              <Link href="/api-reference" className="text-gray-600 hover:text-gray-900">
+                API Reference
+              </Link>
               <a
                 href="https://aptly-api.nsquaredlabs.com"
                 className="text-gray-600 hover:text-gray-900"
