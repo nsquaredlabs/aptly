@@ -76,6 +76,12 @@ app = FastAPI(
     description="Compliance-as-a-service middleware for LLM requests",
     version=settings.api_version,
     lifespan=lifespan,
+    servers=[
+        {
+            "url": "https://aptly-api.nsquaredlabs.com",
+            "description": "Production server"
+        }
+    ],
 )
 
 

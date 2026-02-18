@@ -5,6 +5,12 @@
     "description": "Compliance-as-a-service middleware for LLM requests",
     "version": "1.0.0"
   },
+  "servers": [
+    {
+      "url": "https://aptly-api.nsquaredlabs.com",
+      "description": "Production server"
+    }
+  ],
   "paths": {
     "/v1/health": {
       "get": {
