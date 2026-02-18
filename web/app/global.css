@@ -10,6 +10,71 @@
   --aptly-blue-dark: #2563eb;
 }
 
+/* API Documentation Styling */
+.prose {
+  max-width: none;
+}
+
+.prose h1 {
+  @apply text-3xl font-bold mb-2 text-gray-900;
+}
+
+.prose h2 {
+  @apply text-2xl font-semibold mt-8 mb-4 text-gray-900 border-b border-gray-200 pb-2;
+}
+
+.prose h3 {
+  @apply text-xl font-semibold mt-6 mb-3 text-gray-800;
+}
+
+.prose code {
+  @apply bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-gray-800;
+}
+
+.prose pre {
+  @apply bg-gray-900 text-gray-100 rounded-lg p-4 overflow-x-auto my-4;
+}
+
+.prose pre code {
+  @apply bg-transparent p-0 text-gray-100;
+}
+
+.prose strong {
+  @apply font-semibold text-gray-900;
+}
+
+.prose a {
+  @apply text-blue-600 hover:text-blue-800 underline;
+}
+
+.prose ul {
+  @apply list-disc list-inside my-4 space-y-2;
+}
+
+.prose ol {
+  @apply list-decimal list-inside my-4 space-y-2;
+}
+
+.prose p {
+  @apply my-4 leading-relaxed text-gray-700;
+}
+
+.prose table {
+  @apply w-full border-collapse my-6;
+}
+
+.prose thead {
+  @apply bg-gray-50 border-b-2 border-gray-200;
+}
+
+.prose th {
+  @apply px-4 py-3 text-left text-sm font-semibold text-gray-900;
+}
+
+.prose td {
+  @apply px-4 py-3 border-b border-gray-200 text-sm text-gray-700;
+}
+
 /* Enhance code blocks */
 pre {
   border-radius: 0.5rem !important;

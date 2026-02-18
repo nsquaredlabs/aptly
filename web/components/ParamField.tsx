@@ -3,6 +3,8 @@ import React from 'react'
 
 interface ParamFieldProps {
   header?: string
+  path?: string
+  body?: string
   type?: string
   required?: boolean
   children: React.ReactNode
@@ -10,30 +12,34 @@ interface ParamFieldProps {
 
 export const ParamField: React.FC<ParamFieldProps> = ({
   header,
+  path,
+  body,
   type,
   required,
   children,
 }) => {
+  const paramName = header || path || body
+
   return (
-    <div className="nx-my-4 nx-border nx-border-gray-200 dark:nx-border-gray-800 nx-rounded-lg nx-p-4">
-      <div className="nx-flex nx-items-center nx-gap-2 nx-mb-2">
-        {header && (
-          <code className="nx-text-sm nx-font-mono nx-bg-gray-100 dark:nx-bg-gray-900 nx-px-2 nx-py-1 nx-rounded">
-            {header}
+    <div className="my-3 border-l-4 border-blue-500 bg-gray-50 dark:bg-gray-800/50 pl-4 py-3">
+      <div className="flex items-center gap-2 mb-1">
+        {paramName && (
+          <code className="text-sm font-mono font-semibold text-gray-900 dark:text-gray-100">
+            {paramName}
           </code>
         )}
         {type && (
-          <span className="nx-text-xs nx-text-gray-500 dark:nx-text-gray-400">
+          <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">
             {type}
           </span>
         )}
         {required && (
-          <span className="nx-text-xs nx-text-red-600 dark:nx-text-red-400 nx-font-semibold">
+          <span className="text-xs text-red-600 dark:text-red-400 font-semibold uppercase">
             required
           </span>
         )}
       </div>
-      <div className="nx-text-sm nx-text-gray-700 dark:nx-text-gray-300">
+      <div className="text-sm text-gray-700 dark:text-gray-300">
         {children}
       </div>
     </div>

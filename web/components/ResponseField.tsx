@@ -15,24 +15,24 @@ export const ResponseField: React.FC<ResponseFieldProps> = ({
   children,
 }) => {
   return (
-    <div className="nx-my-3 nx-pl-4 nx-border-l-2 nx-border-gray-200 dark:nx-border-gray-800">
-      <div className="nx-flex nx-items-center nx-gap-2 nx-mb-1">
-        <code className="nx-text-sm nx-font-mono nx-text-purple-600 dark:nx-text-purple-400">
+    <div className="my-2 pl-4 border-l-2 border-green-500">
+      <div className="flex items-center gap-2 mb-1">
+        <code className="text-sm font-mono font-semibold text-green-700 dark:text-green-400">
           {name}
         </code>
         {type && (
-          <span className="nx-text-xs nx-text-gray-500 dark:nx-text-gray-400 nx-font-mono">
+          <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">
             {type}
           </span>
         )}
         {required && (
-          <span className="nx-text-xs nx-text-red-600 dark:nx-text-red-400 nx-font-semibold">
+          <span className="text-xs text-red-600 dark:text-red-400 font-semibold uppercase">
             required
           </span>
         )}
       </div>
       {children && (
-        <div className="nx-text-sm nx-text-gray-700 dark:nx-text-gray-300">
+        <div className="text-sm text-gray-700 dark:text-gray-300">
           {children}
         </div>
       )}

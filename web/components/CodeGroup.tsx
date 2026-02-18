@@ -47,17 +47,17 @@ export const CodeGroup: React.FC<CodeGroupProps> = ({ children }) => {
   // For SSR, render first tab only
   if (!mounted) {
     return (
-      <div className="nx-mt-6 nx-mb-6">
-        <div className="nx-flex nx-border-b nx-border-gray-200 dark:nx-border-gray-800">
+      <div className="my-6 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+        <div className="flex bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
           {codeBlocks.map((child, idx) => (
             <div
               key={idx}
               className={`
-                nx-px-4 nx-py-2 nx-text-sm nx-font-medium
+                px-4 py-2 text-sm font-medium
                 ${
                   idx === 0
-                    ? 'nx-text-blue-600 dark:nx-text-blue-400 nx-border-b-2 nx-border-blue-600 dark:nx-border-blue-400'
-                    : 'nx-text-gray-600 dark:nx-text-gray-400'
+                    ? 'text-blue-600 dark:text-blue-400 bg-white dark:bg-gray-900 border-b-2 border-blue-600 dark:border-blue-400'
+                    : 'text-gray-600 dark:text-gray-400'
                 }
               `}
             >
@@ -65,7 +65,7 @@ export const CodeGroup: React.FC<CodeGroupProps> = ({ children }) => {
             </div>
           ))}
         </div>
-        <div className="code-group-content">
+        <div className="code-group-content bg-gray-900">
           {codeBlocks[0]}
         </div>
       </div>
@@ -73,18 +73,18 @@ export const CodeGroup: React.FC<CodeGroupProps> = ({ children }) => {
   }
 
   return (
-    <div className="nx-mt-6 nx-mb-6">
-      <div className="nx-flex nx-border-b nx-border-gray-200 dark:nx-border-gray-800">
+    <div className="my-6 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+      <div className="flex bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         {codeBlocks.map((child, idx) => (
           <button
             key={idx}
             onClick={() => setActiveTab(idx)}
             className={`
-              nx-px-4 nx-py-2 nx-text-sm nx-font-medium nx-transition-colors
+              px-4 py-2 text-sm font-medium transition-colors
               ${
                 activeTab === idx
-                  ? 'nx-text-blue-600 dark:nx-text-blue-400 nx-border-b-2 nx-border-blue-600 dark:nx-border-blue-400'
-                  : 'nx-text-gray-600 dark:nx-text-gray-400 hover:nx-text-gray-900 dark:hover:nx-text-gray-200'
+                  ? 'text-blue-600 dark:text-blue-400 bg-white dark:bg-gray-900 border-b-2 border-blue-600 dark:border-blue-400'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
               }
             `}
           >
@@ -92,7 +92,7 @@ export const CodeGroup: React.FC<CodeGroupProps> = ({ children }) => {
           </button>
         ))}
       </div>
-      <div className="code-group-content">
+      <div className="code-group-content bg-gray-900">
         {codeBlocks[activeTab]}
       </div>
     </div>
