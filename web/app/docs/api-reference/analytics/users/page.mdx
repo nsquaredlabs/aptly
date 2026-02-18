@@ -1,8 +1,8 @@
----
-title: "User Breakdown"
-api: "GET /v1/analytics/users"
-description: "Get usage breakdown by end-user ID"
----
+# User Breakdown
+
+**`GET /v1/analytics/users`**
+
+Get usage breakdown by end-user ID
 
 See which end-users are driving the most API activity. Usage is grouped by the `user` field passed in each [Chat Completions](/api/chat-completions) request. Requests made without a `user` field are collected under `users_with_no_id`.
 

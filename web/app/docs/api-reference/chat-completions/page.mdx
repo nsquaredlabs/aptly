@@ -1,8 +1,8 @@
----
-title: "Chat Completions"
-api: "POST /v1/chat/completions"
-description: "Create a chat completion with automatic PII redaction and audit logging"
----
+# Chat Completions
+
+**`POST /v1/chat/completions`**
+
+Create a chat completion with automatic PII redaction and audit logging
 
 The chat completions endpoint is the **main feature** of Aptly. It provides an OpenAI-compatible API that automatically redacts PII from requests before sending them to LLM providers, logs all requests for compliance, and enforces rate limits.
 
