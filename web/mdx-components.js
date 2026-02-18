@@ -19,9 +19,10 @@ import {
   Expandable,
 } from './components'
 
-export function useMDXComponents(components: any) {
+export function useMDXComponents(components) {
   return {
-    ...getThemeComponents(components),
+    ...getThemeComponents(),
+    ...components,
     Card,
     CardGroup,
     CodeGroup,
