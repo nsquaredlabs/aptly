@@ -1,5 +1,6 @@
 import React from 'react'
 import Link from 'next/link'
+import { AnimatedCodeDemo } from '@/components/AnimatedCodeDemo'
 
 export default function Home() {
   return (
@@ -88,35 +89,7 @@ export default function Home() {
         {/* Code Preview */}
         <section className="container mx-auto px-6 pb-20">
           <div className="max-w-4xl mx-auto">
-            <div className="border border-gray-300 dark:border-gray-800">
-              {/* Terminal header */}
-              <div className="bg-gray-100 dark:bg-gray-900 px-4 py-2 border-b border-gray-300 dark:border-gray-800 font-mono text-xs text-gray-600 dark:text-gray-400">
-                <span className="text-blue-600 dark:text-blue-400">~/aptly</span> $ python example.py
-              </div>
-              {/* Code */}
-              <div className="bg-white dark:bg-black p-6 overflow-x-auto">
-                <pre className="font-mono text-sm text-gray-900 dark:text-gray-100">
-                  <code>{`from openai import OpenAI
-
-client = OpenAI(
-  base_url="https://api-aptly.nsquaredlabs.com/v1",
-  api_key="apt_live_your_key_here"
-)
-
-response = client.chat.completions.create(
-  model="gpt-4",
-  messages=[{
-    "role": "user",
-    "content": "My email is john@example.com"
-  }]
-)
-
-# ✓ PII automatically redacted before sending to OpenAI
-# ✓ Complete audit trail logged
-# ✓ Zero code changes required`}</code>
-                </pre>
-              </div>
-            </div>
+            <AnimatedCodeDemo />
           </div>
         </section>
 
