@@ -5,15 +5,21 @@ import { motion } from 'framer-motion'
 
 export function AnimatedCodeDemo() {
   const [phase, setPhase] = useState<'idle' | 'deleting' | 'typing' | 'complete'>('idle')
-  const [displayedText, setDisplayedText] = useState('  api_key="sk_your_openai_key"')
+  const [displayedText, setDisplayedText] = useState('client = OpenAI(\n  api_key="sk_your_openai_key"\n)')
   const [showCursor, setShowCursor] = useState(false)
   const [pauseTyping, setPauseTyping] = useState(false)
 
-  const originalLine = '  api_key="sk_your_openai_key"'
-  const newLines = [
-    '  base_url="https://api-aptly.nsquaredlabs.com/v1",',
-    '  api_key="apt_live_your_key_here"'
-  ]
+  const originalLines = 'client = OpenAI(\n  api_key="sk_your_openai_key"\n)'
+  const newLines = `client = OpenAI(
+  base_url="https://api-aptly.nsquaredlabs.com/v1",
+  api_key="apt_live_your_key_here"
+)
+
+response = client.chat.completions.create(
+  model="gpt-4",
+  messages=[{"role": "user", "content": "My email is john@example.com"}],
+  extra_body={"api_keys": {"openai": "sk_your_openai_key"}}
+)`
 
   useEffect(() => {
     let timeout: NodeJS.Timeout
@@ -24,12 +30,11 @@ export function AnimatedCodeDemo() {
         setPhase('deleting')
       }, 2500)
     } else if (phase === 'deleting') {
-      if (displayedText.length > 2) {
+      if (displayedText.length > 0) {
         timeout = setTimeout(() => {
           setDisplayedText(displayedText.slice(0, -1))
-        }, 40)
+        }, 20)
       } else {
-        setDisplayedText('')
         setPhase('typing')
       }
     } else if (phase === 'typing') {
@@ -38,19 +43,18 @@ export function AnimatedCodeDemo() {
           setPauseTyping(false)
         }, 200)
       } else {
-        const fullText = newLines.join('\n')
-        if (displayedText.length < fullText.length) {
-          const nextChar = fullText[displayedText.length]
+        if (displayedText.length < newLines.length) {
+          const nextChar = newLines[displayedText.length]
 
           // Check if we just completed a word (space, quote, comma, etc.)
           const shouldPause = nextChar === ' ' || nextChar === '"' || nextChar === ',' || nextChar === '/'
 
           timeout = setTimeout(() => {
-            setDisplayedText(fullText.slice(0, displayedText.length + 1))
+            setDisplayedText(newLines.slice(0, displayedText.length + 1))
             if (shouldPause) {
               setPauseTyping(true)
             }
-          }, 80)
+          }, 60)
         } else {
           setPhase('complete')
         }
@@ -60,9 +64,9 @@ export function AnimatedCodeDemo() {
         setShowCursor(false)
       }, 500)
       timeout = setTimeout(() => {
-        setDisplayedText(originalLine)
+        setDisplayedText(originalLines)
         setPhase('idle')
-      }, 3500)
+      }, 4000)
     }
 
     return () => clearTimeout(timeout)
@@ -71,25 +75,12 @@ export function AnimatedCodeDemo() {
   const codeLines = [
     'from openai import OpenAI',
     '',
-    'client = OpenAI(',
-  ]
-
-  const remainingCode = [
-    ')',
-    '',
-    'response = client.chat.completions.create(',
-    '  model="gpt-4",',
-    '  messages=[{',
-    '    "role": "user",',
-    '    "content": "My email is john@example.com"',
-    '  }]',
-    ')',
   ]
 
   const benefits = [
     '✓ PII automatically redacted before sending to OpenAI',
     '✓ Complete audit trail logged',
-    '✓ Zero code changes required',
+    '✓ Your OpenAI key stays secure (passed per-request)',
   ]
 
   const lines = displayedText.split('\n')
@@ -122,11 +113,6 @@ export function AnimatedCodeDemo() {
                 />
               )}
             </div>
-          ))}
-
-          {/* Remaining code */}
-          {remainingCode.map((line, i) => (
-            <div key={i}>{line}</div>
           ))}
 
           {/* Benefits (show when complete) */}
