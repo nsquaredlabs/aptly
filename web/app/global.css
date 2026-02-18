@@ -1,7 +1,3 @@
-@layer nextra, aptly-base;
-
-@import 'nextra-theme-docs/dist/style.css' layer(nextra);
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -47,21 +43,12 @@ pre {
 }
 
 /* Improve link colors */
-.nx-text-primary-600 {
-  color: var(--aptly-blue) !important;
+a {
+  color: var(--aptly-blue);
 }
 
-.dark .nx-text-primary-600 {
-  color: var(--aptly-blue-light) !important;
-}
-
-/* Card hover effects */
-.nx-border:hover {
-  border-color: var(--aptly-blue-light);
-}
-
-.dark .nx-border:hover {
-  border-color: var(--aptly-blue-dark);
+.dark a {
+  color: var(--aptly-blue-light);
 }
 
 /* Terminal-inspired styling */

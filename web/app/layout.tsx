@@ -1,4 +1,5 @@
-import '../styles/globals.css'
+import './global.css'
+import type { ReactNode } from 'react'
 
 export const metadata = {
   title: 'Aptly - Compliance-as-a-Service for LLMs',
@@ -8,7 +9,7 @@ export const metadata = {
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: ReactNode
 }) {
   return (
     <html lang="en" suppressHydrationWarning>

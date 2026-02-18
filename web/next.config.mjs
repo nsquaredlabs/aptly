@@ -1,11 +1,11 @@
-import nextra from 'nextra'
+import createMDX from '@next/mdx'
 
-const withNextra = nextra({
-  defaultShowCopyCode: true,
-  latex: true,
+const withMDX = createMDX({
+  extension: /\.mdx?$/,
 })
 
-export default withNextra({
+export default withMDX({
+  pageExtensions: ['js', 'jsx', 'ts', 'tsx', 'md', 'mdx'],
   images: {
     unoptimized: true,
   },
