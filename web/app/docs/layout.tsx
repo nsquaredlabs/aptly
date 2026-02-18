@@ -72,6 +72,70 @@ export default function DocsLayout({
                 >
                   Health Check
                 </Link>
+
+                <div className="pl-3 pt-2">
+                  <div className="text-xs font-semibold text-gray-500 mb-1">Admin</div>
+                  <Link href="/docs/api-reference/admin/create-customer" className="block px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-md">
+                    Create Customer
+                  </Link>
+                  <Link href="/docs/api-reference/admin/list-customers" className="block px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-md">
+                    List Customers
+                  </Link>
+                  <Link href="/docs/api-reference/admin/get-customer" className="block px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-md">
+                    Get Customer
+                  </Link>
+                  <Link href="/docs/api-reference/admin/create-api-key" className="block px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-md">
+                    Create API Key
+                  </Link>
+                </div>
+
+                <div className="pl-3 pt-2">
+                  <div className="text-xs font-semibold text-gray-500 mb-1">Customer</div>
+                  <Link href="/docs/api-reference/customer/get-profile" className="block px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-md">
+                    Get Profile
+                  </Link>
+                  <Link href="/docs/api-reference/customer/update-settings" className="block px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-md">
+                    Update Settings
+                  </Link>
+                  <Link href="/docs/api-reference/customer/create-key" className="block px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-md">
+                    Create Key
+                  </Link>
+                  <Link href="/docs/api-reference/customer/list-keys" className="block px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-md">
+                    List Keys
+                  </Link>
+                  <Link href="/docs/api-reference/customer/revoke-key" className="block px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-md">
+                    Revoke Key
+                  </Link>
+                </div>
+
+                <div className="pl-3 pt-2">
+                  <div className="text-xs font-semibold text-gray-500 mb-1">Audit Logs</div>
+                  <Link href="/docs/api-reference/audit-logs/query-logs" className="block px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-md">
+                    Query Logs
+                  </Link>
+                  <Link href="/docs/api-reference/audit-logs/get-log" className="block px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-md">
+                    Get Log
+                  </Link>
+                </div>
+
+                <div className="pl-3 pt-2">
+                  <div className="text-xs font-semibold text-gray-500 mb-1">Analytics</div>
+                  <Link href="/docs/api-reference/analytics/usage" className="block px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-md">
+                    Usage
+                  </Link>
+                  <Link href="/docs/api-reference/analytics/models" className="block px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-md">
+                    Models
+                  </Link>
+                  <Link href="/docs/api-reference/analytics/pii" className="block px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-md">
+                    PII Detection
+                  </Link>
+                  <Link href="/docs/api-reference/analytics/users" className="block px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-md">
+                    Users
+                  </Link>
+                  <Link href="/docs/api-reference/analytics/export" className="block px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-md">
+                    Export
+                  </Link>
+                </div>
               </div>
 
               <div className="pt-4">
@@ -90,7 +154,56 @@ export default function DocsLayout({
                 >
                   Streaming
                 </Link>
+                <Link
+                  href="/docs/guides/rate-limiting"
+                  className="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-md"
+                >
+                  Rate Limiting
+                </Link>
+                <Link
+                  href="/docs/guides/compliance"
+                  className="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-md"
+                >
+                  Compliance
+                </Link>
               </div>
+
+              <div className="pt-4">
+                <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Deployment
+                </div>
+                <Link
+                  href="/docs/deployment/architecture"
+                  className="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-md"
+                >
+                  Architecture
+                </Link>
+                <Link
+                  href="/docs/deployment/local-development"
+                  className="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-md"
+                >
+                  Local Development
+                </Link>
+                <Link
+                  href="/docs/deployment/production"
+                  className="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-md"
+                >
+                  Production
+                </Link>
+              </div>
+
+              <Link
+                href="/docs/faq"
+                className="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-md"
+              >
+                FAQ
+              </Link>
+              <Link
+                href="/docs/changelog"
+                className="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-md"
+              >
+                Changelog
+              </Link>
             </nav>
           </aside>
 
