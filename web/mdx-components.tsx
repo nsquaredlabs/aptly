@@ -1,4 +1,3 @@
-import { useMDXComponents as getThemeComponents } from 'nextra-theme-docs'
 import {
   Card,
   CardGroup,
@@ -19,9 +18,8 @@ import {
   Expandable,
 } from './components'
 
-export function useMDXComponents(components) {
+export function useMDXComponents(components: Record<string, React.ComponentType<any>>) {
   return {
-    ...getThemeComponents(),
     ...components,
     Card,
     CardGroup,
