@@ -98,6 +98,8 @@ export function AnimatedCodeDemo() {
 
   const clientLines = clientText.split('\n')
   const extraLines = extraBodyText.split('\n')
+  const firstExtraLine = extraLines[0] || '' // This is the comma
+  const restExtraLines = extraLines.slice(1) // The actual extra_body line(s)
 
   return (
     <div className="border border-gray-300 dark:border-gray-800">
@@ -129,21 +131,28 @@ export function AnimatedCodeDemo() {
           <div></div>
           <div>response = client.chat.completions.create(</div>
           <div>  model="gpt-4",</div>
-          <div>  messages=[{'{"role": "user", "content": "My email is john@example.com"}'}]
-            {/* Extra body with cursor */}
-            {extraLines.map((line, i) => (
-              <span key={i}>
-                {line}
-                {showCursor && cursorAt === 'extra' && i === extraLines.length - 1 && (
-                  <motion.span
-                    animate={{ opacity: [1, 0] }}
-                    transition={{ duration: 0.8, repeat: Infinity, repeatType: 'reverse' }}
-                    className="inline-block w-2 h-4 bg-blue-600 dark:bg-blue-400 align-middle"
-                  />
-                )}
-              </span>
-            ))}
+          <div>  messages=[{'{"role": "user", "content": "My email is john@example.com"}'}]{firstExtraLine}
+            {showCursor && cursorAt === 'extra' && restExtraLines.length === 0 && (
+              <motion.span
+                animate={{ opacity: [1, 0] }}
+                transition={{ duration: 0.8, repeat: Infinity, repeatType: 'reverse' }}
+                className="inline-block w-2 h-4 bg-blue-600 dark:bg-blue-400 align-middle"
+              />
+            )}
           </div>
+          {/* Extra body lines (on new lines) */}
+          {restExtraLines.map((line, i) => (
+            <div key={i}>
+              {line}
+              {showCursor && cursorAt === 'extra' && i === restExtraLines.length - 1 && (
+                <motion.span
+                  animate={{ opacity: [1, 0] }}
+                  transition={{ duration: 0.8, repeat: Infinity, repeatType: 'reverse' }}
+                  className="inline-block w-2 h-4 bg-blue-600 dark:bg-blue-400 align-middle"
+                />
+              )}
+            </div>
+          ))}
           <div>)</div>
 
           {/* Benefits (show when complete) */}
