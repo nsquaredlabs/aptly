@@ -12,6 +12,7 @@ import sentry_sdk
 from sentry_sdk.integrations.fastapi import FastApiIntegration
 from sentry_sdk.integrations.starlette import StarletteIntegration
 from fastapi import FastAPI, HTTPException, Response, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field, EmailStr
 import redis.asyncio as redis
@@ -82,6 +83,15 @@ app = FastAPI(
             "description": "Production server"
         }
     ],
+)
+
+# Add CORS middleware to allow API documentation sites to make requests
+app.add_middleware(
+    CORSMiddleware,
+    allow_origin_regex=r"https://.*\.vercel\.app|https://aptly\.nsquaredlabs\.com|http://localhost:\d+",
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
