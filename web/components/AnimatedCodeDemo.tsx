@@ -4,22 +4,19 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 
 export function AnimatedCodeDemo() {
-  const [phase, setPhase] = useState<'idle' | 'deleting' | 'typing' | 'complete'>('idle')
-  const [displayedText, setDisplayedText] = useState('client = OpenAI(\n  api_key="sk_your_openai_key"\n)')
+  const [phase, setPhase] = useState<'idle' | 'client-delete' | 'client-type' | 'extra-body' | 'complete'>('idle')
+  const [clientText, setClientText] = useState('client = OpenAI(\n  api_key="sk_your_openai_key"\n)')
+  const [extraBodyText, setExtraBodyText] = useState('')
   const [showCursor, setShowCursor] = useState(false)
+  const [cursorAt, setCursorAt] = useState<'client' | 'extra'>('client')
   const [pauseTyping, setPauseTyping] = useState(false)
 
-  const originalLines = 'client = OpenAI(\n  api_key="sk_your_openai_key"\n)'
-  const newLines = `client = OpenAI(
+  const originalClient = 'client = OpenAI(\n  api_key="sk_your_openai_key"\n)'
+  const newClient = `client = OpenAI(
   base_url="https://api-aptly.nsquaredlabs.com/v1",
   api_key="apt_live_your_key_here"
-)
-
-response = client.chat.completions.create(
-  model="gpt-4",
-  messages=[{"role": "user", "content": "My email is john@example.com"}],
-  extra_body={"api_keys": {"openai": "sk_your_openai_key"}}
 )`
+  const newExtraBody = ',\n  extra_body={"api_keys": {"openai": "sk_your_openai_key"}}'
 
   useEffect(() => {
     let timeout: NodeJS.Timeout
@@ -27,30 +24,50 @@ response = client.chat.completions.create(
     if (phase === 'idle') {
       timeout = setTimeout(() => {
         setShowCursor(true)
-        setPhase('deleting')
+        setCursorAt('client')
+        setPhase('client-delete')
       }, 2500)
-    } else if (phase === 'deleting') {
-      if (displayedText.length > 0) {
+    } else if (phase === 'client-delete') {
+      if (clientText.length > 0) {
         timeout = setTimeout(() => {
-          setDisplayedText(displayedText.slice(0, -1))
-        }, 20)
+          setClientText(clientText.slice(0, -1))
+        }, 15)
       } else {
-        setPhase('typing')
+        setPhase('client-type')
       }
-    } else if (phase === 'typing') {
+    } else if (phase === 'client-type') {
       if (pauseTyping) {
         timeout = setTimeout(() => {
           setPauseTyping(false)
         }, 200)
       } else {
-        if (displayedText.length < newLines.length) {
-          const nextChar = newLines[displayedText.length]
-
-          // Check if we just completed a word (space, quote, comma, etc.)
+        if (clientText.length < newClient.length) {
+          const nextChar = newClient[clientText.length]
           const shouldPause = nextChar === ' ' || nextChar === '"' || nextChar === ',' || nextChar === '/'
 
           timeout = setTimeout(() => {
-            setDisplayedText(newLines.slice(0, displayedText.length + 1))
+            setClientText(newClient.slice(0, clientText.length + 1))
+            if (shouldPause) {
+              setPauseTyping(true)
+            }
+          }, 60)
+        } else {
+          setCursorAt('extra')
+          setPhase('extra-body')
+        }
+      }
+    } else if (phase === 'extra-body') {
+      if (pauseTyping) {
+        timeout = setTimeout(() => {
+          setPauseTyping(false)
+        }, 200)
+      } else {
+        if (extraBodyText.length < newExtraBody.length) {
+          const nextChar = newExtraBody[extraBodyText.length]
+          const shouldPause = nextChar === ' ' || nextChar === '"' || nextChar === ',' || nextChar === ':'
+
+          timeout = setTimeout(() => {
+            setExtraBodyText(newExtraBody.slice(0, extraBodyText.length + 1))
             if (shouldPause) {
               setPauseTyping(true)
             }
@@ -64,18 +81,14 @@ response = client.chat.completions.create(
         setShowCursor(false)
       }, 500)
       timeout = setTimeout(() => {
-        setDisplayedText(originalLines)
+        setClientText(originalClient)
+        setExtraBodyText('')
         setPhase('idle')
       }, 4000)
     }
 
     return () => clearTimeout(timeout)
-  }, [phase, displayedText, pauseTyping])
-
-  const codeLines = [
-    'from openai import OpenAI',
-    '',
-  ]
+  }, [phase, clientText, extraBodyText, pauseTyping])
 
   const benefits = [
     '✓ PII automatically redacted before sending to OpenAI',
@@ -83,7 +96,8 @@ response = client.chat.completions.create(
     '✓ Your OpenAI key stays secure (passed per-request)',
   ]
 
-  const lines = displayedText.split('\n')
+  const clientLines = clientText.split('\n')
+  const extraLines = extraBodyText.split('\n')
 
   return (
     <div className="border border-gray-300 dark:border-gray-800">
@@ -95,17 +109,14 @@ response = client.chat.completions.create(
       {/* Code */}
       <div className="bg-white dark:bg-black p-6 overflow-x-auto min-h-[400px]">
         <pre className="font-mono text-sm text-gray-900 dark:text-gray-100">
-          {/* Static top lines */}
-          {codeLines.map((line, i) => (
-            <div key={i}>{line}</div>
-          ))}
+          <div>from openai import OpenAI</div>
+          <div></div>
 
-          {/* Animated typing/deleting with inline cursor */}
-          {lines.map((line, i) => (
+          {/* Client definition with cursor */}
+          {clientLines.map((line, i) => (
             <div key={i}>
               {line}
-              {/* Show cursor at the end of the last line */}
-              {showCursor && i === lines.length - 1 && (
+              {showCursor && cursorAt === 'client' && i === clientLines.length - 1 && (
                 <motion.span
                   animate={{ opacity: [1, 0] }}
                   transition={{ duration: 0.8, repeat: Infinity, repeatType: 'reverse' }}
@@ -114,6 +125,26 @@ response = client.chat.completions.create(
               )}
             </div>
           ))}
+
+          <div></div>
+          <div>response = client.chat.completions.create(</div>
+          <div>  model="gpt-4",</div>
+          <div>  messages=[{'{"role": "user", "content": "My email is john@example.com"}'}]
+            {/* Extra body with cursor */}
+            {extraLines.map((line, i) => (
+              <span key={i}>
+                {line}
+                {showCursor && cursorAt === 'extra' && i === extraLines.length - 1 && (
+                  <motion.span
+                    animate={{ opacity: [1, 0] }}
+                    transition={{ duration: 0.8, repeat: Infinity, repeatType: 'reverse' }}
+                    className="inline-block w-2 h-4 bg-blue-600 dark:bg-blue-400 align-middle"
+                  />
+                )}
+              </span>
+            ))}
+          </div>
+          <div>)</div>
 
           {/* Benefits (show when complete) */}
           {phase === 'complete' && (
