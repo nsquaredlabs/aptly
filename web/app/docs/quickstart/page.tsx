@@ -73,7 +73,7 @@ export default function Quickstart() {
 {`from openai import OpenAI
 
 client = OpenAI(
-    base_url="https://aptly-api.nsquaredlabs.com/v1",
+    base_url="https://api-aptly.nsquaredlabs.com/v1",
     api_key="apt_live_your_key_here"
 )
 
@@ -107,7 +107,7 @@ print(response.aptly.pii_entities)  # ['EMAIL_ADDRESS', 'US_SSN']`}
 {`import OpenAI from 'openai';
 
 const client = new OpenAI({
-  baseURL: 'https://aptly-api.nsquaredlabs.com/v1',
+  baseURL: 'https://api-aptly.nsquaredlabs.com/v1',
   apiKey: 'apt_live_your_key_here',
 });
 
@@ -191,7 +191,7 @@ console.log(response.aptly.pii_entities);  // ['EMAIL_ADDRESS', 'US_SSN']`}
           </div>
           <div className="bg-white dark:bg-black p-6">
             <pre className="font-mono text-sm text-gray-900 dark:text-gray-100 overflow-x-auto">
-{`curl https://aptly-api.nsquaredlabs.com/v1/logs \\
+{`curl https://api-aptly.nsquaredlabs.com/v1/logs \\
   -H "Authorization: Bearer apt_live_your_key_here"`}
             </pre>
           </div>

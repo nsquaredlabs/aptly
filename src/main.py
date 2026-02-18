@@ -78,7 +78,7 @@ app = FastAPI(
     lifespan=lifespan,
     servers=[
         {
-            "url": "https://aptly-api.nsquaredlabs.com",
+            "url": "https://api-aptly.nsquaredlabs.com",
             "description": "Production server"
         }
     ],

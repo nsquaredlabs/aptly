@@ -162,7 +162,7 @@ for chunk in stream:
             <pre className="font-mono text-sm text-gray-900 dark:text-gray-100 overflow-x-auto">
 {`# Get usage summary for the last 30 days
 usage = requests.get(
-    "https://aptly-api.nsquaredlabs.com/v1/analytics/usage",
+    "https://api-aptly.nsquaredlabs.com/v1/analytics/usage",
     headers={"Authorization": "Bearer " + aptly_key},
     params={"granularity": "day"}
 ).json()
@@ -172,7 +172,7 @@ print("Total cost:", usage['summary']['total_cost_usd'])
 
 # Get PII detection stats
 pii_stats = requests.get(
-    "https://aptly-api.nsquaredlabs.com/v1/analytics/pii",
+    "https://api-aptly.nsquaredlabs.com/v1/analytics/pii",
     headers={"Authorization": "Bearer " + aptly_key}
 ).json()
 

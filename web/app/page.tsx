@@ -99,7 +99,7 @@ export default function Home() {
                   <code>{`from openai import OpenAI
 
 client = OpenAI(
-  base_url="https://aptly-api.nsquaredlabs.com/v1",
+  base_url="https://api-aptly.nsquaredlabs.com/v1",
   api_key="apt_live_your_key_here"
 )
 
