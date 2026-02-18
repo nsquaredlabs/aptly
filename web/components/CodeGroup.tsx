@@ -1,5 +1,4 @@
-'use client'
-import React, { useState, ReactElement } from 'react'
+import React, { useState, ReactElement, useEffect } from 'react'
 
 interface CodeGroupProps {
   children: React.ReactNode
@@ -7,6 +6,12 @@ interface CodeGroupProps {
 
 export const CodeGroup: React.FC<CodeGroupProps> = ({ children }) => {
   const [activeTab, setActiveTab] = useState(0)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   const codeBlocks = React.Children.toArray(children) as ReactElement[]
 
   // Extract language from code block metadata
@@ -36,6 +41,34 @@ export const CodeGroup: React.FC<CodeGroupProps> = ({ children }) => {
       return child.props['data-language']
     }
     return `Tab ${index + 1}`
+  }
+
+  // For SSR, render first tab only
+  if (!mounted) {
+    return (
+      <div className="nx-mt-6 nx-mb-6">
+        <div className="nx-flex nx-border-b nx-border-gray-200 dark:nx-border-gray-800">
+          {codeBlocks.map((child, idx) => (
+            <div
+              key={idx}
+              className={`
+                nx-px-4 nx-py-2 nx-text-sm nx-font-medium
+                ${
+                  idx === 0
+                    ? 'nx-text-blue-600 dark:nx-text-blue-400 nx-border-b-2 nx-border-blue-600 dark:nx-border-blue-400'
+                    : 'nx-text-gray-600 dark:nx-text-gray-400'
+                }
+              `}
+            >
+              {getTabLabel(child, idx)}
+            </div>
+          ))}
+        </div>
+        <div className="code-group-content">
+          {codeBlocks[0]}
+        </div>
+      </div>
+    )
   }
 
   return (

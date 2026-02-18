@@ -1,5 +1,4 @@
-'use client'
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 
 interface ExpandableProps {
   title: string
@@ -13,6 +12,40 @@ export const Expandable: React.FC<ExpandableProps> = ({
   defaultOpen = false,
 }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // For SSR, render in default state
+  if (!mounted) {
+    return (
+      <div className="nx-my-3 nx-border nx-border-gray-200 dark:nx-border-gray-800 nx-rounded">
+        <div className="nx-w-full nx-flex nx-items-center nx-justify-between nx-p-3 nx-text-left">
+          <span className="nx-text-sm nx-font-medium">{title}</span>
+          <svg
+            className={`nx-w-4 nx-h-4 ${defaultOpen ? 'nx-rotate-180' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 9l-7 7-7-7"
+            />
+          </svg>
+        </div>
+        {defaultOpen && (
+          <div className="nx-px-3 nx-pb-3 nx-border-t nx-border-gray-200 dark:nx-border-gray-800">
+            {children}
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="nx-my-3 nx-border nx-border-gray-200 dark:nx-border-gray-800 nx-rounded">

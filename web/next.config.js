@@ -13,4 +13,5 @@ module.exports = withNextra({
     unoptimized: true,
   },
   transpilePackages: ['nextra', 'nextra-theme-docs'],
+  output: 'standalone',
 })
