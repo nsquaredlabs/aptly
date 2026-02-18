@@ -1,3 +1,7 @@
+@layer nextra, aptly-base;
+
+@import 'nextra-theme-docs/dist/style.css' layer(nextra);
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
