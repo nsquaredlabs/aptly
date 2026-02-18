@@ -125,11 +125,11 @@ response = requests.get(
 )
 
 data = response.json()
-print(f"Total requests: {data['summary']['total_requests']}")
-print(f"Total cost:     ${data['summary']['total_cost_usd']:.2f}\n")
+print("Total requests: {data['summary']['total_requests']}")
+print("Total cost:     ${data['summary']['total_cost_usd']:.2f}\n")
 
 for point in data["time_series"]:
-    print(f"  {point['date']}: {point['requests']} requests, ${point['cost_usd']:.2f}")
+    print("  {point['date']}: {point['requests']} requests, ${point['cost_usd']:.2f}")
 ```
 
 ```javascript JavaScript

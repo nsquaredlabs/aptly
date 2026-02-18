@@ -1,6 +1,6 @@
 ---
 title: "Get Customer"
-api: "GET /v1/admin/customers/{customer_id}"
+api: "GET /v1/admin/customers/cus_abc123"
 description: "Retrieve detailed information about a specific customer including API keys and usage statistics"
 ---
 
@@ -121,17 +121,17 @@ import requests
 customer_id = "cus_abc123"
 
 response = requests.get(
-    f"https://api-aptly.nsquaredlabs.com/v1/admin/customers/{customer_id}",
+    "https://api-aptly.nsquaredlabs.com/v1/admin/customers/cus_abc123",
     headers={"X-Admin-Secret": "your-admin-secret"}
 )
 
 result = response.json()
 
-print(f"Customer: {result['customer']['email']}")
-print(f"Plan: {result['customer']['plan']}")
-print(f"API Keys: {len(result['api_keys'])}")
-print(f"Requests this month: {result['usage']['requests_this_month']}")
-print(f"Tokens this month: {result['usage']['tokens_this_month']}")
+print("Customer: {result['customer']['email']}")
+print("Plan: {result['customer']['plan']}")
+print("API Keys: {len(result['api_keys'])}")
+print("Requests this month: {result['usage']['requests_this_month']}")
+print("Tokens this month: {result['usage']['tokens_this_month']}")
 ```
 
 ```javascript JavaScript
@@ -238,7 +238,7 @@ from datetime import datetime
 
 def get_customer_summary(customer_id, admin_secret):
     response = requests.get(
-        f"https://api-aptly.nsquaredlabs.com/v1/admin/customers/{customer_id}",
+        "https://api-aptly.nsquaredlabs.com/v1/admin/customers/cus_abc123",
         headers={"X-Admin-Secret": admin_secret}
     )
     result = response.json()
@@ -249,30 +249,30 @@ def get_customer_summary(customer_id, admin_secret):
 
     # Print summary
     print("=" * 60)
-    print(f"CUSTOMER SUMMARY: {customer['email']}")
+    print("CUSTOMER SUMMARY: {customer['email']}")
     print("=" * 60)
-    print(f"\nCompany: {customer.get('company_name', 'N/A')}")
-    print(f"Plan: {customer['plan'].upper()}")
-    print(f"Compliance: {', '.join(customer.get('compliance_frameworks', []))}")
-    print(f"PII Mode: {customer['pii_redaction_mode']}")
-    print(f"Joined: {customer['created_at']}")
+    print("\nCompany: {customer.get('company_name', 'N/A')}")
+    print("Plan: {customer['plan'].upper()}")
+    print("Compliance: {', '.join(customer.get('compliance_frameworks', []))}")
+    print("PII Mode: {customer['pii_redaction_mode']}")
+    print("Joined: {customer['created_at']}")
 
-    print(f"\n--- API KEYS ({len(api_keys)}) ---")
+    print("\n--- API KEYS ({len(api_keys)}) ---")
     active_keys = [k for k in api_keys if not k['is_revoked']]
     revoked_keys = [k for k in api_keys if k['is_revoked']]
-    print(f"Active: {len(active_keys)}")
-    print(f"Revoked: {len(revoked_keys)}")
+    print("Active: {len(active_keys)}")
+    print("Revoked: {len(revoked_keys)}")
 
     for key in active_keys:
         last_used = key.get('last_used_at', 'Never')
-        print(f"\n  {key['name']}")
-        print(f"  Prefix: {key['key_prefix']}")
-        print(f"  Rate Limit: {key['rate_limit_per_hour']}/hour")
-        print(f"  Last Used: {last_used}")
+        print("\n  {key['name']}")
+        print("  Prefix: {key['key_prefix']}")
+        print("  Rate Limit: {key['rate_limit_per_hour']}/hour")
+        print("  Last Used: {last_used}")
 
-    print(f"\n--- USAGE THIS MONTH ---")
-    print(f"Requests: {usage['requests_this_month']:,}")
-    print(f"Tokens: {usage['tokens_this_month']:,}")
+    print("\n--- USAGE THIS MONTH ---")
+    print("Requests: {usage['requests_this_month']:,}")
+    print("Tokens: {usage['tokens_this_month']:,}")
     print("=" * 60)
 
 # Usage
@@ -289,7 +289,7 @@ def audit_inactive_keys(customer_id, admin_secret):
     from datetime import datetime, timedelta, timezone
 
     response = requests.get(
-        f"https://api-aptly.nsquaredlabs.com/v1/admin/customers/{customer_id}",
+        "https://api-aptly.nsquaredlabs.com/v1/admin/customers/cus_abc123",
         headers={"X-Admin-Secret": admin_secret}
     )
     result = response.json()
@@ -311,9 +311,9 @@ def audit_inactive_keys(customer_id, admin_secret):
                 inactive_keys.append(key)
 
     if inactive_keys:
-        print(f"⚠ {len(inactive_keys)} inactive keys found:")
+        print("⚠ {len(inactive_keys)} inactive keys found:")
         for key in inactive_keys:
-            print(f"  - {key['name']} ({key['key_prefix']})")
+            print("  - {key['name']} ({key['key_prefix']})")
     else:
         print("✓ All keys are active")
 
@@ -328,7 +328,7 @@ Monitor customer usage and send alerts:
 def check_usage_limits(customer_id, admin_secret, alert_threshold=80):
     """Alert if customer is approaching their usage limits."""
     response = requests.get(
-        f"https://api-aptly.nsquaredlabs.com/v1/admin/customers/{customer_id}",
+        "https://api-aptly.nsquaredlabs.com/v1/admin/customers/cus_abc123",
         headers={"X-Admin-Secret": admin_secret}
     )
     result = response.json()
@@ -344,11 +344,11 @@ def check_usage_limits(customer_id, admin_secret, alert_threshold=80):
     usage_percent = (usage['requests_this_month'] / monthly_limit * 100) if monthly_limit > 0 else 0
 
     if usage_percent >= alert_threshold:
-        print(f"⚠ ALERT: {customer['email']} at {usage_percent:.1f}% of estimated limit")
-        print(f"  Requests: {usage['requests_this_month']:,} / ~{monthly_limit:,}")
+        print("⚠ ALERT: {customer['email']} at {usage_percent:.1f}% of estimated limit")
+        print("  Requests: {usage['requests_this_month']:,} / ~{monthly_limit:,}")
         return True
     else:
-        print(f"✓ {customer['email']}: {usage_percent:.1f}% usage")
+        print("✓ {customer['email']}: {usage_percent:.1f}% usage")
         return False
 ```
 
@@ -362,7 +362,7 @@ import json
 def export_customer_report(customer_id, admin_secret, filename):
     """Export detailed customer report to JSON."""
     response = requests.get(
-        f"https://api-aptly.nsquaredlabs.com/v1/admin/customers/{customer_id}",
+        "https://api-aptly.nsquaredlabs.com/v1/admin/customers/cus_abc123",
         headers={"X-Admin-Secret": admin_secret}
     )
     result = response.json()
@@ -381,7 +381,7 @@ def export_customer_report(customer_id, admin_secret, filename):
     with open(filename, 'w') as f:
         json.dump(report, f, indent=2)
 
-    print(f"Report saved to {filename}")
+    print("Report saved to {filename}")
 
 # Usage
 export_customer_report("cus_abc123", "your-admin-secret", "customer_report.json")

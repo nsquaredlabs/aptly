@@ -1,6 +1,6 @@
 ---
 title: "Revoke API Key"
-api: "DELETE /v1/api-keys/{key_id}"
+api: "DELETE /v1/api-keys/key_xyz789"
 description: "Revoke an API key to permanently disable it"
 ---
 
@@ -43,14 +43,14 @@ import requests
 key_id_to_revoke = "key_abc123"
 
 response = requests.delete(
-    f"https://api-aptly.nsquaredlabs.com/v1/api-keys/{key_id_to_revoke}",
+    "https://api-aptly.nsquaredlabs.com/v1/api-keys/{key_id_to_revoke}",
     headers={"Authorization": "Bearer apt_live_xyz789"}
 )
 
 if response.status_code == 204:
-    print(f"✓ Key {key_id_to_revoke} successfully revoked")
+    print("✓ Key {key_id_to_revoke} successfully revoked")
 else:
-    print(f"✗ Error: {response.json()}")
+    print("✗ Error: {response.json()}")
 ```
 
 ```javascript JavaScript
@@ -130,8 +130,8 @@ def revoke_compromised_key(current_api_key, compromised_key_id):
     # First, create a replacement key
     create_response = requests.post(
         "https://api-aptly.nsquaredlabs.com/v1/api-keys",
-        headers={"Authorization": f"Bearer {current_api_key}"},
-        json={"name": f"Replacement for {compromised_key_id}"}
+        headers={"Authorization": "Bearer {current_api_key}"},
+        json={"name": "Replacement for {compromised_key_id}"}
     )
 
     if create_response.status_code != 201:
@@ -139,18 +139,18 @@ def revoke_compromised_key(current_api_key, compromised_key_id):
         return False
 
     new_key = create_response.json()
-    print(f"✓ Created replacement key: {new_key['key_prefix']}")
-    print(f"  New Key: {new_key['key']}")
+    print("✓ Created replacement key: {new_key['key_prefix']}")
+    print("  New Key: {new_key['key']}")
     print()
 
     # Now revoke the compromised key
     revoke_response = requests.delete(
-        f"https://api-aptly.nsquaredlabs.com/v1/api-keys/{compromised_key_id}",
-        headers={"Authorization": f"Bearer {current_api_key}"}
+        "https://api-aptly.nsquaredlabs.com/v1/api-keys/{compromised_key_id}",
+        headers={"Authorization": "Bearer {current_api_key}"}
     )
 
     if revoke_response.status_code == 204:
-        print(f"✓ Compromised key {compromised_key_id} revoked")
+        print("✓ Compromised key {compromised_key_id} revoked")
         print()
         print("⚠ NEXT STEPS:")
         print("  1. Update affected applications with new key")
@@ -158,7 +158,7 @@ def revoke_compromised_key(current_api_key, compromised_key_id):
         print("  3. Investigate how the key was compromised")
         return True
     else:
-        print(f"✗ Failed to revoke key: {revoke_response.json()}")
+        print("✗ Failed to revoke key: {revoke_response.json()}")
         return False
 
 # Usage
@@ -178,7 +178,7 @@ def revoke_inactive_keys(current_api_key, days_inactive=90):
     # Get all keys
     list_response = requests.get(
         "https://api-aptly.nsquaredlabs.com/v1/api-keys",
-        headers={"Authorization": f"Bearer {current_api_key}"}
+        headers={"Authorization": "Bearer {current_api_key}"}
     )
     all_keys = list_response.json()['api_keys']
 
@@ -201,16 +201,16 @@ def revoke_inactive_keys(current_api_key, days_inactive=90):
                 inactive_keys.append(key)
 
     if not inactive_keys:
-        print(f"✓ No inactive keys found (older than {days_inactive} days)")
+        print("✓ No inactive keys found (older than {days_inactive} days)")
         return
 
-    print(f"Found {len(inactive_keys)} inactive keys:\n")
+    print("Found {len(inactive_keys)} inactive keys:\n")
     for key in inactive_keys:
-        print(f"  {key['name']} ({key['key_prefix']})")
+        print("  {key['name']} ({key['key_prefix']})")
         last_used = key.get('last_used_at', 'Never')
-        print(f"    Last used: {last_used}\n")
+        print("    Last used: {last_used}\n")
 
-    confirm = input(f"Revoke all {len(inactive_keys)} keys? (yes/no): ")
+    confirm = input("Revoke all {len(inactive_keys)} keys? (yes/no): ")
     if confirm.lower() != 'yes':
         print("Cancelled")
         return
@@ -219,17 +219,17 @@ def revoke_inactive_keys(current_api_key, days_inactive=90):
     revoked_count = 0
     for key in inactive_keys:
         response = requests.delete(
-            f"https://api-aptly.nsquaredlabs.com/v1/api-keys/{key['id']}",
-            headers={"Authorization": f"Bearer {current_api_key}"}
+            "https://api-aptly.nsquaredlabs.com/v1/api-keys/{key['id']}",
+            headers={"Authorization": "Bearer {current_api_key}"}
         )
 
         if response.status_code == 204:
-            print(f"✓ Revoked: {key['name']}")
+            print("✓ Revoked: {key['name']}")
             revoked_count += 1
         else:
-            print(f"✗ Failed: {key['name']}")
+            print("✗ Failed: {key['name']}")
 
-    print(f"\n✓ Revoked {revoked_count}/{len(inactive_keys)} keys")
+    print("\n✓ Revoked {revoked_count}/{len(inactive_keys)} keys")
 
 # Usage
 revoke_inactive_keys("apt_live_xyz789", days_inactive=90)
@@ -245,7 +245,7 @@ def revoke_keys_by_pattern(current_api_key, pattern):
     # Get all keys
     response = requests.get(
         "https://api-aptly.nsquaredlabs.com/v1/api-keys",
-        headers={"Authorization": f"Bearer {current_api_key}"}
+        headers={"Authorization": "Bearer {current_api_key}"}
     )
     all_keys = response.json()['api_keys']
 
@@ -257,14 +257,14 @@ def revoke_keys_by_pattern(current_api_key, pattern):
     ]
 
     if not matching_keys:
-        print(f"No keys found matching '{pattern}'")
+        print("No keys found matching '{pattern}'")
         return
 
-    print(f"Found {len(matching_keys)} keys matching '{pattern}':\n")
+    print("Found {len(matching_keys)} keys matching '{pattern}':\n")
     for key in matching_keys:
-        print(f"  {key['name']} ({key['id']})")
+        print("  {key['name']} ({key['id']})")
 
-    confirm = input(f"\nRevoke these {len(matching_keys)} keys? (yes/no): ")
+    confirm = input("\nRevoke these {len(matching_keys)} keys? (yes/no): ")
     if confirm.lower() != 'yes':
         print("Cancelled")
         return
@@ -272,14 +272,14 @@ def revoke_keys_by_pattern(current_api_key, pattern):
     # Revoke each
     for key in matching_keys:
         response = requests.delete(
-            f"https://api-aptly.nsquaredlabs.com/v1/api-keys/{key['id']}",
-            headers={"Authorization": f"Bearer {current_api_key}"}
+            "https://api-aptly.nsquaredlabs.com/v1/api-keys/{key['id']}",
+            headers={"Authorization": "Bearer {current_api_key}"}
         )
 
         if response.status_code == 204:
-            print(f"✓ Revoked: {key['name']}")
+            print("✓ Revoked: {key['name']}")
         else:
-            print(f"✗ Failed: {key['name']}")
+            print("✗ Failed: {key['name']}")
 
 # Usage - revoke all "test" or "development" keys
 revoke_keys_by_pattern("apt_live_xyz789", "test")
@@ -295,7 +295,7 @@ def safe_revoke_key(current_api_key, key_id_to_revoke):
     # Step 1: Get the key details
     list_response = requests.get(
         "https://api-aptly.nsquaredlabs.com/v1/api-keys",
-        headers={"Authorization": f"Bearer {current_api_key}"}
+        headers={"Authorization": "Bearer {current_api_key}"}
     )
     all_keys = list_response.json()['api_keys']
 
@@ -306,7 +306,7 @@ def safe_revoke_key(current_api_key, key_id_to_revoke):
             break
 
     if not key_to_revoke:
-        print(f"✗ Key {key_id_to_revoke} not found")
+        print("✗ Key {key_id_to_revoke} not found")
         return False
 
     # Step 2: Verify it's not the current key
@@ -317,11 +317,11 @@ def safe_revoke_key(current_api_key, key_id_to_revoke):
 
     # Step 3: Show key details and confirm
     print("Key to revoke:")
-    print(f"  Name: {key_to_revoke['name']}")
-    print(f"  ID: {key_to_revoke['id']}")
-    print(f"  Prefix: {key_to_revoke['key_prefix']}")
-    print(f"  Created: {key_to_revoke['created_at']}")
-    print(f"  Last Used: {key_to_revoke.get('last_used_at', 'Never')}")
+    print("  Name: {key_to_revoke['name']}")
+    print("  ID: {key_to_revoke['id']}")
+    print("  Prefix: {key_to_revoke['key_prefix']}")
+    print("  Created: {key_to_revoke['created_at']}")
+    print("  Last Used: {key_to_revoke.get('last_used_at', 'Never')}")
     print()
 
     confirm = input("Confirm revocation (type 'REVOKE' to proceed): ")
@@ -331,16 +331,16 @@ def safe_revoke_key(current_api_key, key_id_to_revoke):
 
     # Step 4: Revoke
     response = requests.delete(
-        f"https://api-aptly.nsquaredlabs.com/v1/api-keys/{key_id_to_revoke}",
-        headers={"Authorization": f"Bearer {current_api_key}"}
+        "https://api-aptly.nsquaredlabs.com/v1/api-keys/{key_id_to_revoke}",
+        headers={"Authorization": "Bearer {current_api_key}"}
     )
 
     if response.status_code == 204:
-        print(f"\n✓ Key successfully revoked")
-        print(f"⚠ This action cannot be undone")
+        print("\n✓ Key successfully revoked")
+        print("⚠ This action cannot be undone")
         return True
     else:
-        print(f"\n✗ Revocation failed: {response.json()}")
+        print("\n✗ Revocation failed: {response.json()}")
         return False
 
 # Usage

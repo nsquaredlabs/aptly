@@ -99,7 +99,7 @@ response = requests.patch(
 )
 
 updated = response.json()
-print(f"✓ PII mode updated to: {updated['pii_redaction_mode']}")
+print("✓ PII mode updated to: {updated['pii_redaction_mode']}")
 ```
 
 ```javascript JavaScript
@@ -148,7 +148,7 @@ response = requests.patch(
 )
 
 updated = response.json()
-print(f"✓ Compliance frameworks: {', '.join(updated['compliance_frameworks'])}")
+print("✓ Compliance frameworks: {', '.join(updated['compliance_frameworks'])}")
 ```
 
 ```javascript JavaScript
@@ -185,8 +185,8 @@ response = requests.patch(
 )
 
 updated = response.json()
-print(f"✓ PII mode: {updated['pii_redaction_mode']}")
-print(f"✓ Frameworks: {', '.join(updated['compliance_frameworks'])}")
+print("✓ PII mode: {updated['pii_redaction_mode']}")
+print("✓ Frameworks: {', '.join(updated['compliance_frameworks'])}")
 ```
 
 ## Response Examples
@@ -253,13 +253,13 @@ def change_pii_mode(api_key, mode):
     """
     valid_modes = ['mask', 'hash', 'remove']
     if mode not in valid_modes:
-        print(f"✗ Invalid mode. Must be one of: {', '.join(valid_modes)}")
+        print("✗ Invalid mode. Must be one of: {', '.join(valid_modes)}")
         return None
 
     response = requests.patch(
         "https://api-aptly.nsquaredlabs.com/v1/me",
         headers={
-            "Authorization": f"Bearer {api_key}",
+            "Authorization": "Bearer {api_key}",
             "Content-Type": "application/json"
         },
         json={"pii_redaction_mode": mode}
@@ -267,8 +267,8 @@ def change_pii_mode(api_key, mode):
 
     if response.status_code == 200:
         updated = response.json()
-        print(f"✓ PII redaction mode updated to: {mode}")
-        print(f"\nHow PII will be redacted:")
+        print("✓ PII redaction mode updated to: {mode}")
+        print("\nHow PII will be redacted:")
         if mode == "mask":
             print('  "John Smith" → "PERSON_A"')
             print('  "john@email.com" → "EMAIL_A"')
@@ -280,7 +280,7 @@ def change_pii_mode(api_key, mode):
             print('  "john@email.com" → "[REDACTED]"')
         return updated
     else:
-        print(f"✗ Error: {response.json()}")
+        print("✗ Error: {response.json()}")
         return None
 
 # Usage
@@ -297,7 +297,7 @@ def add_compliance_framework(api_key, new_framework):
     # First, get current frameworks
     get_response = requests.get(
         "https://api-aptly.nsquaredlabs.com/v1/me",
-        headers={"Authorization": f"Bearer {api_key}"}
+        headers={"Authorization": "Bearer {api_key}"}
     )
     current = get_response.json()
     current_frameworks = set(current['compliance_frameworks'])
@@ -309,7 +309,7 @@ def add_compliance_framework(api_key, new_framework):
     response = requests.patch(
         "https://api-aptly.nsquaredlabs.com/v1/me",
         headers={
-            "Authorization": f"Bearer {api_key}",
+            "Authorization": "Bearer {api_key}",
             "Content-Type": "application/json"
         },
         json={"compliance_frameworks": list(current_frameworks)}
@@ -317,11 +317,11 @@ def add_compliance_framework(api_key, new_framework):
 
     if response.status_code == 200:
         updated = response.json()
-        print(f"✓ Added {new_framework}")
-        print(f"  Current frameworks: {', '.join(updated['compliance_frameworks'])}")
+        print("✓ Added {new_framework}")
+        print("  Current frameworks: {', '.join(updated['compliance_frameworks'])}")
         return updated
     else:
-        print(f"✗ Error: {response.json()}")
+        print("✗ Error: {response.json()}")
         return None
 
 # Usage
@@ -338,13 +338,13 @@ def remove_compliance_framework(api_key, framework_to_remove):
     # Get current frameworks
     get_response = requests.get(
         "https://api-aptly.nsquaredlabs.com/v1/me",
-        headers={"Authorization": f"Bearer {api_key}"}
+        headers={"Authorization": "Bearer {api_key}"}
     )
     current = get_response.json()
     current_frameworks = set(current['compliance_frameworks'])
 
     if framework_to_remove not in current_frameworks:
-        print(f"✗ {framework_to_remove} is not currently enabled")
+        print("✗ {framework_to_remove} is not currently enabled")
         return None
 
     # Remove framework
@@ -354,7 +354,7 @@ def remove_compliance_framework(api_key, framework_to_remove):
     response = requests.patch(
         "https://api-aptly.nsquaredlabs.com/v1/me",
         headers={
-            "Authorization": f"Bearer {api_key}",
+            "Authorization": "Bearer {api_key}",
             "Content-Type": "application/json"
         },
         json={"compliance_frameworks": list(current_frameworks)}
@@ -362,11 +362,11 @@ def remove_compliance_framework(api_key, framework_to_remove):
 
     if response.status_code == 200:
         updated = response.json()
-        print(f"✓ Removed {framework_to_remove}")
-        print(f"  Remaining: {', '.join(updated['compliance_frameworks']) or 'None'}")
+        print("✓ Removed {framework_to_remove}")
+        print("  Remaining: {', '.join(updated['compliance_frameworks']) or 'None'}")
         return updated
     else:
-        print(f"✗ Error: {response.json()}")
+        print("✗ Error: {response.json()}")
         return None
 
 # Usage
@@ -411,7 +411,7 @@ def compliance_onboarding_wizard(api_key):
     response = requests.patch(
         "https://api-aptly.nsquaredlabs.com/v1/me",
         headers={
-            "Authorization": f"Bearer {api_key}",
+            "Authorization": "Bearer {api_key}",
             "Content-Type": "application/json"
         },
         json={
@@ -423,10 +423,10 @@ def compliance_onboarding_wizard(api_key):
     if response.status_code == 200:
         updated = response.json()
         print("\n✓ Configuration complete!")
-        print(f"  PII Mode: {updated['pii_redaction_mode']}")
-        print(f"  Frameworks: {', '.join(updated['compliance_frameworks']) or 'None'}")
+        print("  PII Mode: {updated['pii_redaction_mode']}")
+        print("  Frameworks: {', '.join(updated['compliance_frameworks']) or 'None'}")
     else:
-        print(f"\n✗ Configuration failed: {response.json()}")
+        print("\n✗ Configuration failed: {response.json()}")
 
 # Usage
 compliance_onboarding_wizard("apt_live_xyz789")
@@ -448,7 +448,7 @@ def validate_configuration(api_key, required_mode=None, required_frameworks=None
     """
     response = requests.get(
         "https://api-aptly.nsquaredlabs.com/v1/me",
-        headers={"Authorization": f"Bearer {api_key}"}
+        headers={"Authorization": "Bearer {api_key}"}
     )
     profile = response.json()
 
@@ -457,8 +457,8 @@ def validate_configuration(api_key, required_mode=None, required_frameworks=None
     # Check PII mode
     if required_mode and profile['pii_redaction_mode'] != required_mode:
         issues.append(
-            f"PII mode is '{profile['pii_redaction_mode']}', "
-            f"but '{required_mode}' is required"
+            "PII mode is '{profile['pii_redaction_mode']}', "
+            "but '{required_mode}' is required"
         )
 
     # Check frameworks
@@ -469,19 +469,19 @@ def validate_configuration(api_key, required_mode=None, required_frameworks=None
 
         if missing:
             issues.append(
-                f"Missing required frameworks: {', '.join(missing)}"
+                "Missing required frameworks: {', '.join(missing)}"
             )
 
     # Report
     if issues:
         print("⚠ CONFIGURATION ISSUES:")
         for issue in issues:
-            print(f"  - {issue}")
+            print("  - {issue}")
         return False
     else:
         print("✓ Configuration valid")
-        print(f"  PII Mode: {profile['pii_redaction_mode']}")
-        print(f"  Frameworks: {', '.join(profile['compliance_frameworks'])}")
+        print("  PII Mode: {profile['pii_redaction_mode']}")
+        print("  Frameworks: {', '.join(profile['compliance_frameworks'])}")
         return True
 
 # Usage

@@ -123,11 +123,11 @@ response = requests.get(
 )
 
 data = response.json()
-print(f"Unique users: {data['total_unique_users']}")
-print(f"Anonymous requests: {data['users_with_no_id']['requests']}\n")
+print("Unique users: {data['total_unique_users']}")
+print("Anonymous requests: {data['users_with_no_id']['requests']}\n")
 
 for user in data["users"]:
-    print(f"{user['user_id']} — {user['requests']} requests, ${user['cost_usd']:.2f}")
+    print("{user['user_id']} — {user['requests']} requests, ${user['cost_usd']:.2f}")
 ```
 
 ```javascript JavaScript

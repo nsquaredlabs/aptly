@@ -133,12 +133,12 @@ response = requests.get(
 )
 
 data = response.json()
-print(f"Input PII rate:    {data['summary']['input_pii_rate']}%")
-print(f"Response PII rate: {data['summary']['response_pii_rate']}%\n")
+print("Input PII rate:    {data['summary']['input_pii_rate']}%")
+print("Response PII rate: {data['summary']['response_pii_rate']}%\n")
 
 for entity in data["entity_types"]:
-    print(f"  {entity['type']}: {entity['total_count']} detections "
-          f"(input {entity['input_count']}, response {entity['response_count']})")
+    print("  {entity['type']}: {entity['total_count']} detections "
+          "(input {entity['input_count']}, response {entity['response_count']})")
 ```
 
 ```javascript JavaScript

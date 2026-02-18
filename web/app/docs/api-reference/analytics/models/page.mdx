@@ -105,9 +105,9 @@ response = requests.get(
 
 data = response.json()
 for model in data["models"]:
-    print(f"{model['model']} ({model['provider']})")
-    print(f"  {model['requests']} requests ({model['percentage_of_requests']}%)")
-    print(f"  Cost: ${model['cost_usd']:.2f} | Avg latency: {model['avg_latency_ms']}ms\n")
+    print("{model['model']} ({model['provider']})")
+    print("  {model['requests']} requests ({model['percentage_of_requests']}%)")
+    print("  Cost: ${model['cost_usd']:.2f} | Avg latency: {model['avg_latency_ms']}ms\n")
 ```
 
 ```javascript JavaScript

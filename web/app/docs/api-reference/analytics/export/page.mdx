@@ -104,7 +104,7 @@ response = requests.get(
 )
 
 for day in response.json():
-    print(f"{day['date']}: {day['requests']} requests, ${day['cost_usd']:.2f}")
+    print("{day['date']}: {day['requests']} requests, ${day['cost_usd']:.2f}")
 ```
 
 ```javascript JavaScript

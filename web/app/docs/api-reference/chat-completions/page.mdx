@@ -250,10 +250,10 @@ result = response.json()
 # What the LLM actually received (PII redacted):
 # "My name is PERSON_A and my SSN is SSN_A. Can you help me?"
 
-print(f"PII detected: {result['pii_redacted']['entities_found']}")
+print("PII detected: {result['pii_redacted']['entities_found']}")
 # Output: PII detected: ['PERSON', 'US_SSN']
 
-print(f"Redaction count: {result['pii_redacted']['redaction_count']}")
+print("Redaction count: {result['pii_redacted']['redaction_count']}")
 # Output: Redaction count: 2
 ```
 
@@ -556,7 +556,7 @@ import requests
 try:
     response = requests.post(
         "https://api-aptly.nsquaredlabs.com/v1/chat/completions",
-        headers={"Authorization": f"Bearer {api_key}"},
+        headers={"Authorization": "Bearer {api_key}"},
         json={...}
     )
     response.raise_for_status()
@@ -566,7 +566,7 @@ except requests.exceptions.HTTPError as e:
     if e.response.status_code == 429:
         # Rate limited - wait and retry
         reset_at = e.response.json()['error']['details']['reset_at']
-        print(f"Rate limited. Retry after {reset_at}")
+        print("Rate limited. Retry after {reset_at}")
     elif e.response.status_code == 402:
         # LLM provider key invalid
         print("Provider API key rejected")
@@ -574,7 +574,7 @@ except requests.exceptions.HTTPError as e:
         # LLM provider error - transient
         print("LLM provider error - retry")
     else:
-        print(f"Error: {e.response.json()}")
+        print("Error: {e.response.json()}")
 ```
 
 ## Related Endpoints

@@ -97,9 +97,9 @@ response = requests.get(
 
 result = response.json()
 
-print(f"Total customers: {result['total']}")
+print("Total customers: {result['total']}")
 for customer in result['customers']:
-    print(f"- {customer['email']} ({customer['plan']} plan)")
+    print("- {customer['email']} ({customer['plan']} plan)")
 ```
 
 ```javascript JavaScript
@@ -202,7 +202,7 @@ def get_all_customers(admin_secret):
 
 # Usage
 customers = get_all_customers("your-admin-secret")
-print(f"Retrieved {len(customers)} customers")
+print("Retrieved {len(customers)} customers")
 ```
 
 ## Use Cases
@@ -228,15 +228,15 @@ def build_customer_dashboard(admin_secret):
     pro_count = sum(1 for c in result['customers'] if c['plan'] == 'pro')
     free_count = total - pro_count
 
-    print(f"Total Customers: {total}")
-    print(f"Pro Plan: {pro_count} ({pro_count/total*100:.1f}%)")
-    print(f"Free Plan: {free_count} ({free_count/total*100:.1f}%)")
+    print("Total Customers: {total}")
+    print("Pro Plan: {pro_count} ({pro_count/total*100:.1f}%)")
+    print("Free Plan: {free_count} ({free_count/total*100:.1f}%)")
 
     # Recent signups
     print("\nRecent Signups:")
     for customer in result['customers'][:5]:
         created = datetime.fromisoformat(customer['created_at'].replace('Z', '+00:00'))
-        print(f"  {customer['email']} - {created.strftime('%Y-%m-%d')}")
+        print("  {customer['email']} - {created.strftime('%Y-%m-%d')}")
 ```
 
 ### Export to CSV
@@ -265,7 +265,7 @@ def export_customers_csv(admin_secret, filename="customers.csv"):
                 'created_at': customer['created_at']
             })
 
-    print(f"Exported {len(all_customers)} customers to {filename}")
+    print("Exported {len(all_customers)} customers to {filename}")
 ```
 
 ### Filter by Plan
@@ -278,9 +278,9 @@ def get_customers_by_plan(admin_secret, plan="pro"):
     all_customers = get_all_customers(admin_secret)
     filtered = [c for c in all_customers if c['plan'] == plan]
 
-    print(f"Found {len(filtered)} customers on {plan} plan:")
+    print("Found {len(filtered)} customers on {plan} plan:")
     for customer in filtered:
-        print(f"  - {customer['email']}")
+        print("  - {customer['email']}")
 
     return filtered
 ```

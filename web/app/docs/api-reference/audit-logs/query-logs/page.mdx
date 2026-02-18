@@ -146,14 +146,14 @@ response = requests.get(
 
 result = response.json()
 
-print(f"Total logs: {result['pagination']['total']}")
-print(f"Showing page {result['pagination']['page']} of {result['pagination']['total_pages']}\n")
+print("Total logs: {result['pagination']['total']}")
+print("Showing page {result['pagination']['page']} of {result['pagination']['total_pages']}\n")
 
 for log in result['logs']:
-    print(f"[{log['timestamp']}] {log['model']}")
-    print(f"  Tokens: {log['tokens_input']} in, {log['tokens_output']} out")
-    print(f"  Cost: ${log['cost_usd']:.4f}")
-    print(f"  PII: Input={log['pii_detected_input']}, Response={log['pii_detected_response']}")
+    print("[{log['timestamp']}] {log['model']}")
+    print("  Tokens: {log['tokens_input']} in, {log['tokens_output']} out")
+    print("  Cost: ${log['cost_usd']:.4f}")
+    print("  PII: Input={log['pii_detected_input']}, Response={log['pii_detected_response']}")
     print()
 ```
 
@@ -199,7 +199,7 @@ response = requests.get(
 )
 
 result = response.json()
-print(f"Found {result['pagination']['total']} logs in the last 7 days")
+print("Found {result['pagination']['total']} logs in the last 7 days")
 ```
 
 ### Filter by Model
@@ -215,7 +215,7 @@ response = requests.get(
 )
 
 result = response.json()
-print(f"GPT-4 requests: {result['pagination']['total']}")
+print("GPT-4 requests: {result['pagination']['total']}")
 ```
 
 ### Filter by User
@@ -231,7 +231,7 @@ response = requests.get(
 )
 
 result = response.json()
-print(f"Logs for user_123: {result['pagination']['total']}")
+print("Logs for user_123: {result['pagination']['total']}")
 ```
 
 ## Response Example
@@ -299,11 +299,11 @@ from collections import defaultdict
 def generate_monthly_report(api_key, year, month):
     """Generate monthly usage report."""
     # Calculate date range
-    start_date = f"{year}-{month:02d}-01"
+    start_date = "{year}-{month:02d}-01"
     if month == 12:
-        end_date = f"{year + 1}-01-01"
+        end_date = "{year + 1}-01-01"
     else:
-        end_date = f"{year}-{month + 1:02d}-01"
+        end_date = "{year}-{month + 1:02d}-01"
 
     # Fetch all logs for the month
     all_logs = []
@@ -312,7 +312,7 @@ def generate_monthly_report(api_key, year, month):
     while True:
         response = requests.get(
             "https://api-aptly.nsquaredlabs.com/v1/logs",
-            headers={"Authorization": f"Bearer {api_key}"},
+            headers={"Authorization": "Bearer {api_key}"},
             params={
                 "start_date": start_date,
                 "end_date": end_date,
@@ -342,18 +342,18 @@ def generate_monthly_report(api_key, year, month):
 
     # Print report
     print("=" * 60)
-    print(f"MONTHLY USAGE REPORT - {year}-{month:02d}")
+    print("MONTHLY USAGE REPORT - {year}-{month:02d}")
     print("=" * 60)
-    print(f"\nTotal Requests: {total_requests:,}")
-    print(f"Total Tokens: {total_tokens:,}")
-    print(f"Total Cost: ${total_cost:.2f}")
+    print("\nTotal Requests: {total_requests:,}")
+    print("Total Tokens: {total_tokens:,}")
+    print("Total Cost: ${total_cost:.2f}")
 
-    print(f"\n--- BY MODEL ---")
+    print("\n--- BY MODEL ---")
     for model, stats in sorted(by_model.items(), key=lambda x: x[1]['cost'], reverse=True):
-        print(f"\n{model}:")
-        print(f"  Requests: {stats['count']:,}")
-        print(f"  Tokens: {stats['tokens']:,}")
-        print(f"  Cost: ${stats['cost']:.2f}")
+        print("\n{model}:")
+        print("  Requests: {stats['count']:,}")
+        print("  Tokens: {stats['tokens']:,}")
+        print("  Cost: ${stats['cost']:.2f}")
 
     return {
         "total_requests": total_requests,
@@ -381,7 +381,7 @@ def analyze_pii_detection(api_key, days=30):
     # Fetch logs
     response = requests.get(
         "https://api-aptly.nsquaredlabs.com/v1/logs",
-        headers={"Authorization": f"Bearer {api_key}"},
+        headers={"Authorization": "Bearer {api_key}"},
         params={
             "start_date": start_date.isoformat(),
             "end_date": end_date.isoformat(),
@@ -395,10 +395,10 @@ def analyze_pii_detection(api_key, days=30):
     input_pii = sum(1 for log in logs if log['pii_detected_input'])
     response_pii = sum(1 for log in logs if log['pii_detected_response'])
 
-    print(f"PII Detection Analysis (last {days} days):")
-    print(f"  Total requests: {total}")
-    print(f"  Input PII detected: {input_pii} ({input_pii/total*100:.1f}%)")
-    print(f"  Response PII detected: {response_pii} ({response_pii/total*100:.1f}%)")
+    print("PII Detection Analysis (last {days} days):")
+    print("  Total requests: {total}")
+    print("  Input PII detected: {input_pii} ({input_pii/total*100:.1f}%)")
+    print("  Response PII detected: {response_pii} ({response_pii/total*100:.1f}%)")
 
     return {
         "total": total,
@@ -425,7 +425,7 @@ def track_user_costs(api_key, start_date, end_date):
     while True:
         response = requests.get(
             "https://api-aptly.nsquaredlabs.com/v1/logs",
-            headers={"Authorization": f"Bearer {api_key}"},
+            headers={"Authorization": "Bearer {api_key}"},
             params={
                 "start_date": start_date,
                 "end_date": end_date,
@@ -448,10 +448,10 @@ def track_user_costs(api_key, start_date, end_date):
     # Print report
     print("Cost Breakdown by User:")
     for user, stats in sorted(user_stats.items(), key=lambda x: x[1]['cost'], reverse=True):
-        print(f"\n{user}:")
-        print(f"  Requests: {stats['requests']:,}")
-        print(f"  Tokens: {stats['tokens']:,}")
-        print(f"  Cost: ${stats['cost']:.2f}")
+        print("\n{user}:")
+        print("  Requests: {stats['requests']:,}")
+        print("  Tokens: {stats['tokens']:,}")
+        print("  Cost: ${stats['cost']:.2f}")
 
     return dict(user_stats)
 
@@ -475,7 +475,7 @@ def export_logs_to_csv(api_key, start_date, end_date, filename="audit_logs.csv")
     while True:
         response = requests.get(
             "https://api-aptly.nsquaredlabs.com/v1/logs",
-            headers={"Authorization": f"Bearer {api_key}"},
+            headers={"Authorization": "Bearer {api_key}"},
             params={
                 "start_date": start_date,
                 "end_date": end_date,
@@ -501,7 +501,7 @@ def export_logs_to_csv(api_key, start_date, end_date, filename="audit_logs.csv")
         for log in logs:
             writer.writerow({k: log.get(k) for k in fieldnames})
 
-    print(f"✓ Exported {len(logs)} logs to {filename}")
+    print("✓ Exported {len(logs)} logs to {filename}")
 
 # Usage
 export_logs_to_csv("apt_live_xyz789", "2026-01-01", "2026-01-31")
@@ -520,7 +520,7 @@ def fetch_all_logs(api_key, **filters):
     while True:
         response = requests.get(
             "https://api-aptly.nsquaredlabs.com/v1/logs",
-            headers={"Authorization": f"Bearer {api_key}"},
+            headers={"Authorization": "Bearer {api_key}"},
             params={**filters, "page": page, "limit": 100}
         )
         result = response.json()

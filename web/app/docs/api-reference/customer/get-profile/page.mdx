@@ -93,14 +93,14 @@ response = requests.get(
 
 profile = response.json()
 
-print(f"Customer: {profile['email']}")
-print(f"Plan: {profile['plan']}")
-print(f"PII Mode: {profile['pii_redaction_mode']}")
-print(f"\nUsage this month:")
-print(f"  Requests: {profile['usage']['requests_this_month']:,}")
-print(f"  Tokens: {profile['usage']['tokens_this_month']:,}")
-print(f"\nRate Limit: {profile['usage']['rate_limit_per_hour']}/hour")
-print(f"Current Hour: {profile['usage']['requests_this_hour']} requests")
+print("Customer: {profile['email']}")
+print("Plan: {profile['plan']}")
+print("PII Mode: {profile['pii_redaction_mode']}")
+print("\nUsage this month:")
+print("  Requests: {profile['usage']['requests_this_month']:,}")
+print("  Tokens: {profile['usage']['tokens_this_month']:,}")
+print("\nRate Limit: {profile['usage']['rate_limit_per_hour']}/hour")
+print("Current Hour: {profile['usage']['requests_this_hour']} requests")
 ```
 
 ```javascript JavaScript
@@ -166,35 +166,35 @@ def display_usage_dashboard(api_key):
     """Display a comprehensive usage dashboard."""
     response = requests.get(
         "https://api-aptly.nsquaredlabs.com/v1/me",
-        headers={"Authorization": f"Bearer {api_key}"}
+        headers={"Authorization": "Bearer {api_key}"}
     )
     profile = response.json()
 
     print("=" * 60)
-    print(f"APTLY USAGE DASHBOARD - {profile['company_name']}")
+    print("APTLY USAGE DASHBOARD - {profile['company_name']}")
     print("=" * 60)
-    print(f"\nAccount: {profile['email']}")
-    print(f"Plan: {profile['plan'].upper()}")
-    print(f"PII Mode: {profile['pii_redaction_mode']}")
-    print(f"Compliance: {', '.join(profile['compliance_frameworks'])}")
+    print("\nAccount: {profile['email']}")
+    print("Plan: {profile['plan'].upper()}")
+    print("PII Mode: {profile['pii_redaction_mode']}")
+    print("Compliance: {', '.join(profile['compliance_frameworks'])}")
 
     usage = profile['usage']
-    print(f"\n--- THIS MONTH ---")
-    print(f"Requests: {usage['requests_this_month']:,}")
-    print(f"Tokens: {usage['tokens_this_month']:,}")
+    print("\n--- THIS MONTH ---")
+    print("Requests: {usage['requests_this_month']:,}")
+    print("Tokens: {usage['tokens_this_month']:,}")
 
-    print(f"\n--- CURRENT HOUR ---")
-    print(f"Requests: {usage['requests_this_hour']} / {usage['rate_limit_per_hour']}")
+    print("\n--- CURRENT HOUR ---")
+    print("Requests: {usage['requests_this_hour']} / {usage['rate_limit_per_hour']}")
 
     # Calculate percentage
     hour_percent = (usage['requests_this_hour'] / usage['rate_limit_per_hour']) * 100
-    print(f"Usage: {hour_percent:.1f}%")
+    print("Usage: {hour_percent:.1f}%")
 
     # Warning if approaching limit
     if hour_percent > 80:
-        print(f"\n⚠ WARNING: Approaching rate limit!")
+        print("\n⚠ WARNING: Approaching rate limit!")
     elif hour_percent > 90:
-        print(f"\n🚨 CRITICAL: Very close to rate limit!")
+        print("\n🚨 CRITICAL: Very close to rate limit!")
 
     print("=" * 60)
 
@@ -211,7 +211,7 @@ def check_rate_limit_status(api_key):
     """Check current rate limit status."""
     response = requests.get(
         "https://api-aptly.nsquaredlabs.com/v1/me",
-        headers={"Authorization": f"Bearer {api_key}"}
+        headers={"Authorization": "Bearer {api_key}"}
     )
     profile = response.json()
     usage = profile['usage']
@@ -221,10 +221,10 @@ def check_rate_limit_status(api_key):
     remaining = limit - current
     percent_used = (current / limit) * 100
 
-    print(f"Rate Limit Status:")
-    print(f"  Limit: {limit} requests/hour")
-    print(f"  Used: {current} requests ({percent_used:.1f}%)")
-    print(f"  Remaining: {remaining} requests")
+    print("Rate Limit Status:")
+    print("  Limit: {limit} requests/hour")
+    print("  Used: {current} requests ({percent_used:.1f}%)")
+    print("  Remaining: {remaining} requests")
 
     if percent_used >= 90:
         return "CRITICAL"
@@ -236,7 +236,7 @@ def check_rate_limit_status(api_key):
 # Usage
 status = check_rate_limit_status("apt_live_xyz789")
 if status != "OK":
-    print(f"\n⚠ Status: {status}")
+    print("\n⚠ Status: {status}")
 ```
 
 ### Cost Estimation
@@ -254,17 +254,17 @@ def estimate_monthly_cost(api_key, cost_per_1k_tokens=0.01):
     """
     response = requests.get(
         "https://api-aptly.nsquaredlabs.com/v1/me",
-        headers={"Authorization": f"Bearer {api_key}"}
+        headers={"Authorization": "Bearer {api_key}"}
     )
     profile = response.json()
 
     tokens_this_month = profile['usage']['tokens_this_month']
     cost = (tokens_this_month / 1000) * cost_per_1k_tokens
 
-    print(f"Monthly Cost Estimate:")
-    print(f"  Tokens used: {tokens_this_month:,}")
-    print(f"  Cost per 1K tokens: ${cost_per_1k_tokens}")
-    print(f"  Estimated cost: ${cost:.2f}")
+    print("Monthly Cost Estimate:")
+    print("  Tokens used: {tokens_this_month:,}")
+    print("  Cost per 1K tokens: ${cost_per_1k_tokens}")
+    print("  Estimated cost: ${cost:.2f}")
 
     return cost
 
@@ -287,7 +287,7 @@ def verify_compliance_settings(api_key, required_frameworks):
     """
     response = requests.get(
         "https://api-aptly.nsquaredlabs.com/v1/me",
-        headers={"Authorization": f"Bearer {api_key}"}
+        headers={"Authorization": "Bearer {api_key}"}
     )
     profile = response.json()
 
@@ -297,18 +297,18 @@ def verify_compliance_settings(api_key, required_frameworks):
     missing = required_set - enabled_frameworks
     extra = enabled_frameworks - required_set
 
-    print(f"Compliance Check:")
-    print(f"  Required: {', '.join(required_frameworks)}")
-    print(f"  Enabled: {', '.join(enabled_frameworks)}")
+    print("Compliance Check:")
+    print("  Required: {', '.join(required_frameworks)}")
+    print("  Enabled: {', '.join(enabled_frameworks)}")
 
     if missing:
-        print(f"\n⚠ MISSING: {', '.join(missing)}")
-        print(f"  Action: Contact admin to enable these frameworks")
+        print("\n⚠ MISSING: {', '.join(missing)}")
+        print("  Action: Contact admin to enable these frameworks")
         return False
     else:
-        print(f"\n✓ All required frameworks enabled")
+        print("\n✓ All required frameworks enabled")
         if extra:
-            print(f"  Additional: {', '.join(extra)}")
+            print("  Additional: {', '.join(extra)}")
         return True
 
 # Usage
@@ -326,7 +326,7 @@ def export_profile(api_key, filename="aptly_profile.json"):
     """Export profile to JSON file."""
     response = requests.get(
         "https://api-aptly.nsquaredlabs.com/v1/me",
-        headers={"Authorization": f"Bearer {api_key}"}
+        headers={"Authorization": "Bearer {api_key}"}
     )
     profile = response.json()
 
@@ -339,7 +339,7 @@ def export_profile(api_key, filename="aptly_profile.json"):
     with open(filename, 'w') as f:
         json.dump(export_data, f, indent=2)
 
-    print(f"✓ Profile exported to {filename}")
+    print("✓ Profile exported to {filename}")
 
 # Usage
 export_profile("apt_live_xyz789")

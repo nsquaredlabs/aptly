@@ -82,10 +82,10 @@ result = response.json()
 # CRITICAL: Save this key immediately!
 new_api_key = result["key"]
 
-print(f"✓ New API key created!")
-print(f"Key: {new_api_key}")
-print(f"Name: {result['name']}")
-print(f"Rate Limit: {result['rate_limit_per_hour']}/hour")
+print("✓ New API key created!")
+print("Key: {new_api_key}")
+print("Name: {result['name']}")
+print("Rate Limit: {result['rate_limit_per_hour']}/hour")
 print()
 print("⚠ IMPORTANT: Store this key securely - it won't be shown again!")
 
@@ -172,25 +172,25 @@ def create_environment_keys(current_api_key):
         response = requests.post(
             "https://api-aptly.nsquaredlabs.com/v1/api-keys",
             headers={
-                "Authorization": f"Bearer {current_api_key}",
+                "Authorization": "Bearer {current_api_key}",
                 "Content-Type": "application/json"
             },
-            json={"name": f"{env} Environment"}
+            json={"name": "{env} Environment"}
         )
 
         if response.status_code == 201:
             result = response.json()
             keys[env.lower()] = result['key']
-            print(f"✓ Created {env} key: {result['key_prefix']}")
+            print("✓ Created {env} key: {result['key_prefix']}")
         else:
-            print(f"✗ Failed to create {env} key")
+            print("✗ Failed to create {env} key")
 
     # Save to .env file or secrets manager
     with open('.env.aptly_keys', 'w') as f:
         for env, key in keys.items():
-            f.write(f"APTLY_{env.upper()}_KEY={key}\n")
+            f.write("APTLY_{env.upper()}_KEY={key}\n")
 
-    print(f"\n✓ Keys saved to .env.aptly_keys")
+    print("\n✓ Keys saved to .env.aptly_keys")
     print("⚠ Add this file to .gitignore!")
 
     return keys
@@ -216,7 +216,7 @@ def rotate_key(current_api_key, old_key_name, new_key_name):
     # Step 1: Create new key
     response = requests.post(
         "https://api-aptly.nsquaredlabs.com/v1/api-keys",
-        headers={"Authorization": f"Bearer {current_api_key}"},
+        headers={"Authorization": "Bearer {current_api_key}"},
         json={"name": new_key_name}
     )
 
@@ -227,8 +227,8 @@ def rotate_key(current_api_key, old_key_name, new_key_name):
     new_key = response.json()
 
     print("✓ New key created!")
-    print(f"  New Key: {new_key['key']}")
-    print(f"  Key ID: {new_key['id']}")
+    print("  New Key: {new_key['key']}")
+    print("  Key ID: {new_key['id']}")
     print()
     print("⚠ NEXT STEPS:")
     print("  1. Update your application with the new key")
@@ -263,22 +263,22 @@ def create_team_keys(current_api_key, teams):
     for team in teams:
         response = requests.post(
             "https://api-aptly.nsquaredlabs.com/v1/api-keys",
-            headers={"Authorization": f"Bearer {current_api_key}"},
-            json={"name": f"{team} Team"}
+            headers={"Authorization": "Bearer {current_api_key}"},
+            json={"name": "{team} Team"}
         )
 
         if response.status_code == 201:
             result = response.json()
             created_keys.append(result)
-            print(f"✓ {team} Team: {result['key_prefix']}")
+            print("✓ {team} Team: {result['key_prefix']}")
         else:
-            print(f"✗ Failed to create key for {team}")
+            print("✗ Failed to create key for {team}")
 
     # Export to JSON for team distribution
     with open('team_keys.json', 'w') as f:
         json.dump(created_keys, f, indent=2)
 
-    print(f"\n✓ Created {len(created_keys)} keys")
+    print("\n✓ Created {len(created_keys)} keys")
     print("Keys saved to team_keys.json - distribute securely!")
 
     return created_keys
@@ -301,28 +301,28 @@ def create_and_store_key(current_api_key, key_name, env_file=".env"):
     # Create the key
     response = requests.post(
         "https://api-aptly.nsquaredlabs.com/v1/api-keys",
-        headers={"Authorization": f"Bearer {current_api_key}"},
+        headers={"Authorization": "Bearer {current_api_key}"},
         json={"name": key_name}
     )
 
     if response.status_code != 201:
-        print(f"✗ Error: {response.json()}")
+        print("✗ Error: {response.json()}")
         return None
 
     result = response.json()
     new_key = result['key']
 
     # Append to .env file
-    env_var_name = f"APTLY_{key_name.upper().replace(' ', '_')}_KEY"
+    env_var_name = "APTLY_{key_name.upper().replace(' ', '_')}_KEY"
 
     with open(env_file, 'a') as f:
-        f.write(f"\n{env_var_name}={new_key}\n")
+        f.write("\n{env_var_name}={new_key}\n")
 
-    print(f"✓ Key created and saved!")
-    print(f"  Environment Variable: {env_var_name}")
-    print(f"  File: {env_file}")
-    print(f"  Prefix: {result['key_prefix']}")
-    print(f"\n⚠ Make sure {env_file} is in .gitignore!")
+    print("✓ Key created and saved!")
+    print("  Environment Variable: {env_var_name}")
+    print("  File: {env_file}")
+    print("  Prefix: {result['key_prefix']}")
+    print("\n⚠ Make sure {env_file} is in .gitignore!")
 
     return result
 

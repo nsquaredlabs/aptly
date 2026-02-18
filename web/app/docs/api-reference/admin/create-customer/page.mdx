@@ -150,7 +150,7 @@ result = response.json()
 
 # CRITICAL: Save this API key - it won't be shown again!
 api_key = result["api_key"]["key"]
-print(f"Customer created! API Key: {api_key}")
+print("Customer created! API Key: {api_key}")
 
 # Provide the API key to the customer securely
 ```
@@ -263,13 +263,13 @@ result = create_customer(email="admin@company.com", plan="pro")
 api_key = result["api_key"]["key"]
 
 # Store in your secrets management system
-secrets_manager.store(f"aptly_key_{result['customer']['id']}", api_key)
+secrets_manager.store("aptly_key_{result['customer']['id']}", api_key)
 
 # Send to customer via secure channel
 send_secure_message(
     to=result["customer"]["email"],
     subject="Your Aptly API Key",
-    message=f"Your API key: {api_key}\n\nStore this securely!"
+    message="Your API key: {api_key}\n\nStore this securely!"
 )
 ```
 
@@ -319,13 +319,13 @@ def create_aptly_customer(email, company_name, plan):
 
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 409:
-            print(f"Customer {email} already exists")
+            print("Customer {email} already exists")
             return None
         elif e.response.status_code == 401:
             print("Invalid admin secret - check your environment variables")
             raise
         else:
-            print(f"Error creating customer: {e.response.json()}")
+            print("Error creating customer: {e.response.json()}")
             raise
 ```
 
@@ -367,13 +367,13 @@ with open('customers.csv', 'r') as f:
             # Save API key securely
             with open('api_keys.txt', 'a') as keys_file:
                 keys_file.write(
-                    f"{row['email']},{result['api_key']['key']}\n"
+                    "{row['email']},{result['api_key']['key']}\n"
                 )
 
-            print(f"✓ Created: {row['email']}")
+            print("✓ Created: {row['email']}")
 
         except Exception as e:
-            print(f"✗ Failed: {row['email']} - {e}")
+            print("✗ Failed: {row['email']} - {e}")
 ```
 
 ## Related Endpoints

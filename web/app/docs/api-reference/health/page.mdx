@@ -53,7 +53,7 @@ health = response.json()
 if health["status"] == "healthy":
     print("✓ Service is healthy")
 else:
-    print(f"⚠ Service degraded: {health['checks']}")
+    print("⚠ Service degraded: {health['checks']}")
 ```
 
 ```javascript JavaScript
@@ -140,7 +140,7 @@ def monitor_health():
         health = response.json()
 
         if health["status"] != "healthy":
-            send_alert(f"Aptly service degraded: {health['checks']}")
+            send_alert("Aptly service degraded: {health['checks']}")
 
         time.sleep(60)  # Check every minute
 ```

@@ -1,6 +1,6 @@
 ---
 title: "Get Log Detail"
-api: "GET /v1/logs/{log_id}"
+api: "GET /v1/logs/log_xyz789"
 description: "Retrieve complete details of a specific audit log entry including messages and PII detections"
 ---
 
@@ -131,24 +131,24 @@ import requests
 log_id = "log_abc123"
 
 response = requests.get(
-    f"https://api-aptly.nsquaredlabs.com/v1/logs/{log_id}",
+    "https://api-aptly.nsquaredlabs.com/v1/logs/log_xyz789",
     headers={"Authorization": "Bearer apt_live_xyz789"}
 )
 
 log = response.json()
 
-print(f"Request at: {log['timestamp']}")
-print(f"Model: {log['model']}")
-print(f"Status: {log['status']}")
-print(f"\nOriginal Message: {log['messages_original'][0]['content']}")
-print(f"Redacted Message: {log['messages_redacted'][0]['content']}")
-print(f"\nPII Detected: {len(log['pii_entities_input'])} entities")
+print("Request at: {log['timestamp']}")
+print("Model: {log['model']}")
+print("Status: {log['status']}")
+print("\nOriginal Message: {log['messages_original'][0]['content']}")
+print("Redacted Message: {log['messages_redacted'][0]['content']}")
+print("\nPII Detected: {len(log['pii_entities_input'])} entities")
 for entity in log['pii_entities_input']:
-    print(f"  - {entity['entity_type']} (confidence: {entity['score']:.2f})")
+    print("  - {entity['entity_type']} (confidence: {entity['score']:.2f})")
 
-print(f"\nTokens: {log['tokens_input']} in, {log['tokens_output']} out")
-print(f"Cost: ${log['cost_usd']:.4f}")
-print(f"Duration: {log['duration_ms']}ms")
+print("\nTokens: {log['tokens_input']} in, {log['tokens_output']} out")
+print("Cost: ${log['cost_usd']:.4f}")
+print("Duration: {log['duration_ms']}ms")
 ```
 
 ```javascript JavaScript
@@ -253,43 +253,43 @@ import requests
 def audit_pii_redaction(api_key, log_id):
     """Review PII redaction for a specific request."""
     response = requests.get(
-        f"https://api-aptly.nsquaredlabs.com/v1/logs/{log_id}",
-        headers={"Authorization": f"Bearer {api_key}"}
+        "https://api-aptly.nsquaredlabs.com/v1/logs/log_xyz789",
+        headers={"Authorization": "Bearer {api_key}"}
     )
     log = response.json()
 
     print("=" * 60)
     print("PII REDACTION AUDIT")
     print("=" * 60)
-    print(f"\nLog ID: {log['id']}")
-    print(f"Timestamp: {log['timestamp']}")
-    print(f"Model: {log['model']}")
+    print("\nLog ID: {log['id']}")
+    print("Timestamp: {log['timestamp']}")
+    print("Model: {log['model']}")
 
     # Show original vs redacted
     original_msg = log['messages_original'][0]['content']
     redacted_msg = log['messages_redacted'][0]['content']
 
-    print(f"\n--- ORIGINAL MESSAGE ---")
+    print("\n--- ORIGINAL MESSAGE ---")
     print(original_msg)
 
-    print(f"\n--- REDACTED MESSAGE (sent to LLM) ---")
+    print("\n--- REDACTED MESSAGE (sent to LLM) ---")
     print(redacted_msg)
 
     # Show detected entities
-    print(f"\n--- PII ENTITIES DETECTED ({len(log['pii_entities_input'])}) ---")
+    print("\n--- PII ENTITIES DETECTED ({len(log['pii_entities_input'])}) ---")
     for entity in log['pii_entities_input']:
         # Extract the actual text
         text = original_msg[entity['start']:entity['end']]
-        print(f"\n{entity['entity_type']}:")
-        print(f"  Text: '{text}'")
-        print(f"  Position: {entity['start']}-{entity['end']}")
-        print(f"  Confidence: {entity['score']:.2%}")
+        print("\n{entity['entity_type']}:")
+        print("  Text: '{text}'")
+        print("  Position: {entity['start']}-{entity['end']}")
+        print("  Confidence: {entity['score']:.2%}")
 
     # Response PII
     if log['pii_entities_response']:
-        print(f"\n⚠ PII DETECTED IN RESPONSE:")
+        print("\n⚠ PII DETECTED IN RESPONSE:")
         for entity in log['pii_entities_response']:
-            print(f"  - {entity['entity_type']} (score: {entity['score']:.2%})")
+            print("  - {entity['entity_type']} (score: {entity['score']:.2%})")
 
     print("=" * 60)
 
@@ -305,8 +305,8 @@ Generate a compliance report for a specific request:
 def generate_compliance_report(api_key, log_id):
     """Generate compliance report for a request."""
     response = requests.get(
-        f"https://api-aptly.nsquaredlabs.com/v1/logs/{log_id}",
-        headers={"Authorization": f"Bearer {api_key}"}
+        "https://api-aptly.nsquaredlabs.com/v1/logs/log_xyz789",
+        headers={"Authorization": "Bearer {api_key}"}
     )
     log = response.json()
 
@@ -314,31 +314,31 @@ def generate_compliance_report(api_key, log_id):
     print("COMPLIANCE REPORT")
     print("=" * 60)
 
-    print(f"\n1. Request Metadata:")
-    print(f"   Log ID: {log['id']}")
-    print(f"   Timestamp: {log['timestamp']}")
-    print(f"   User: {log.get('user_id', 'N/A')}")
-    print(f"   Framework: {log.get('compliance_framework', 'N/A')}")
+    print("\n1. Request Metadata:")
+    print("   Log ID: {log['id']}")
+    print("   Timestamp: {log['timestamp']}")
+    print("   User: {log.get('user_id', 'N/A')}")
+    print("   Framework: {log.get('compliance_framework', 'N/A')}")
 
-    print(f"\n2. PII Protection:")
-    print(f"   Input PII detected: {len(log['pii_entities_input'])} entities")
-    print(f"   Response PII detected: {len(log['pii_entities_response'])} entities")
-    print(f"   PII types found: {', '.join(set(e['entity_type'] for e in log['pii_entities_input']))}")
+    print("\n2. PII Protection:")
+    print("   Input PII detected: {len(log['pii_entities_input'])} entities")
+    print("   Response PII detected: {len(log['pii_entities_response'])} entities")
+    print("   PII types found: {', '.join(set(e['entity_type'] for e in log['pii_entities_input']))}")
 
-    print(f"\n3. Data Immutability:")
-    print(f"   ✓ Log is immutable (cannot be modified or deleted)")
-    print(f"   ✓ Original messages stored separately")
-    print(f"   ✓ Redacted messages auditable")
+    print("\n3. Data Immutability:")
+    print("   ✓ Log is immutable (cannot be modified or deleted)")
+    print("   ✓ Original messages stored separately")
+    print("   ✓ Redacted messages auditable")
 
-    print(f"\n4. Request Details:")
-    print(f"   Model: {log['model']}")
-    print(f"   Provider: {log['provider']}")
-    print(f"   Status: {log['status']}")
-    print(f"   Duration: {log['duration_ms']}ms")
+    print("\n4. Request Details:")
+    print("   Model: {log['model']}")
+    print("   Provider: {log['provider']}")
+    print("   Status: {log['status']}")
+    print("   Duration: {log['duration_ms']}ms")
 
-    print(f"\n5. Usage:")
-    print(f"   Tokens: {log['tokens_input']} in, {log['tokens_output']} out")
-    print(f"   Cost: ${log['cost_usd']:.4f}")
+    print("\n5. Usage:")
+    print("   Tokens: {log['tokens_input']} in, {log['tokens_output']} out")
+    print("   Cost: ${log['cost_usd']:.4f}")
 
     print("=" * 60)
 
@@ -354,8 +354,8 @@ Side-by-side comparison:
 def compare_messages(api_key, log_id):
     """Compare original and redacted messages."""
     response = requests.get(
-        f"https://api-aptly.nsquaredlabs.com/v1/logs/{log_id}",
-        headers={"Authorization": f"Bearer {api_key}"}
+        "https://api-aptly.nsquaredlabs.com/v1/logs/log_xyz789",
+        headers={"Authorization": "Bearer {api_key}"}
     )
     log = response.json()
 
@@ -363,10 +363,10 @@ def compare_messages(api_key, log_id):
         log['messages_original'],
         log['messages_redacted']
     )):
-        print(f"\n--- Message {i + 1} ({orig['role']}) ---")
-        print(f"\nORIGINAL:")
+        print("\n--- Message {i + 1} ({orig['role']}) ---")
+        print("\nORIGINAL:")
         print(orig['content'])
-        print(f"\nREDACTED:")
+        print("\nREDACTED:")
         print(redacted['content'])
         print()
 
@@ -382,8 +382,8 @@ Analyze PII detection patterns:
 def extract_pii_statistics(api_key, log_id):
     """Extract statistics about PII detection."""
     response = requests.get(
-        f"https://api-aptly.nsquaredlabs.com/v1/logs/{log_id}",
-        headers={"Authorization": f"Bearer {api_key}"}
+        "https://api-aptly.nsquaredlabs.com/v1/logs/log_xyz789",
+        headers={"Authorization": "Bearer {api_key}"}
     )
     log = response.json()
 
@@ -397,12 +397,12 @@ def extract_pii_statistics(api_key, log_id):
     avg_confidence = sum(e['score'] for e in log['pii_entities_input']) / len(log['pii_entities_input']) if log['pii_entities_input'] else 0
 
     print("PII Detection Statistics:")
-    print(f"  Total entities: {len(log['pii_entities_input'])}")
-    print(f"  Unique types: {len(type_counts)}")
-    print(f"  Average confidence: {avg_confidence:.2%}")
-    print(f"\nBreakdown:")
+    print("  Total entities: {len(log['pii_entities_input'])}")
+    print("  Unique types: {len(type_counts)}")
+    print("  Average confidence: {avg_confidence:.2%}")
+    print("\nBreakdown:")
     for entity_type, count in type_counts.most_common():
-        print(f"  {entity_type}: {count}")
+        print("  {entity_type}: {count}")
 
     return {
         "total": len(log['pii_entities_input']),
@@ -422,8 +422,8 @@ Investigate errors:
 def debug_failed_request(api_key, log_id):
     """Debug a failed request."""
     response = requests.get(
-        f"https://api-aptly.nsquaredlabs.com/v1/logs/{log_id}",
-        headers={"Authorization": f"Bearer {api_key}"}
+        "https://api-aptly.nsquaredlabs.com/v1/logs/log_xyz789",
+        headers={"Authorization": "Bearer {api_key}"}
     )
     log = response.json()
 
@@ -432,18 +432,18 @@ def debug_failed_request(api_key, log_id):
         return
 
     print("✗ Request Failed")
-    print(f"\nError Message:")
-    print(f"  {log.get('error_message', 'Unknown error')}")
+    print("\nError Message:")
+    print("  {log.get('error_message', 'Unknown error')}")
 
-    print(f"\nRequest Details:")
-    print(f"  Model: {log['model']}")
-    print(f"  Provider: {log['provider']}")
-    print(f"  Timestamp: {log['timestamp']}")
-    print(f"  Duration: {log['duration_ms']}ms")
+    print("\nRequest Details:")
+    print("  Model: {log['model']}")
+    print("  Provider: {log['provider']}")
+    print("  Timestamp: {log['timestamp']}")
+    print("  Duration: {log['duration_ms']}ms")
 
-    print(f"\nInput Messages:")
+    print("\nInput Messages:")
     for msg in log['messages_redacted']:
-        print(f"  [{msg['role']}]: {msg['content'][:100]}...")
+        print("  [{msg['role']}]: {msg['content'][:100]}...")
 
 # Usage
 debug_failed_request("apt_live_xyz789", "log_error123")

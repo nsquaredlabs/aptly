@@ -67,12 +67,12 @@ response = requests.get(
 
 result = response.json()
 
-print(f"You have {len(result['api_keys'])} active API keys:")
+print("You have {len(result['api_keys'])} active API keys:")
 for key in result['api_keys']:
-    print(f"\n{key['name']}")
-    print(f"  Prefix: {key['key_prefix']}")
-    print(f"  Rate Limit: {key['rate_limit_per_hour']}/hour")
-    print(f"  Last Used: {key.get('last_used_at', 'Never')}")
+    print("\n{key['name']}")
+    print("  Prefix: {key['key_prefix']}")
+    print("  Rate Limit: {key['rate_limit_per_hour']}/hour")
+    print("  Last Used: {key.get('last_used_at', 'Never')}")
 ```
 
 ```javascript JavaScript
@@ -145,14 +145,14 @@ def audit_api_keys(api_key):
     """Audit API keys and identify stale ones."""
     response = requests.get(
         "https://api-aptly.nsquaredlabs.com/v1/api-keys",
-        headers={"Authorization": f"Bearer {api_key}"}
+        headers={"Authorization": "Bearer {api_key}"}
     )
     result = response.json()
 
     now = datetime.now(timezone.utc)
     thirty_days_ago = now - timedelta(days=30)
 
-    print(f"Total Active Keys: {len(result['api_keys'])}\n")
+    print("Total Active Keys: {len(result['api_keys'])}\n")
 
     for key in result['api_keys']:
         last_used = key.get('last_used_at')
@@ -163,13 +163,13 @@ def audit_api_keys(api_key):
             last_used_dt = datetime.fromisoformat(last_used.replace('Z', '+00:00'))
             if last_used_dt < thirty_days_ago:
                 days_ago = (now - last_used_dt).days
-                status = f"⚠ STALE ({days_ago} days ago)"
+                status = "⚠ STALE ({days_ago} days ago)"
             else:
                 status = "✓ Active"
 
-        print(f"{status} - {key['name']}")
-        print(f"  Prefix: {key['key_prefix']}")
-        print(f"  Rate Limit: {key['rate_limit_per_hour']}/hour")
+        print("{status} - {key['name']}")
+        print("  Prefix: {key['key_prefix']}")
+        print("  Rate Limit: {key['rate_limit_per_hour']}/hour")
         print()
 
 # Usage
@@ -185,7 +185,7 @@ def find_key_by_prefix(api_key, prefix):
     """Find a key by its prefix."""
     response = requests.get(
         "https://api-aptly.nsquaredlabs.com/v1/api-keys",
-        headers={"Authorization": f"Bearer {api_key}"}
+        headers={"Authorization": "Bearer {api_key}"}
     )
     result = response.json()
 
@@ -198,7 +198,7 @@ def find_key_by_prefix(api_key, prefix):
 # Usage
 key = find_key_by_prefix("apt_live_xyz789", "apt_live_abc")
 if key:
-    print(f"Found: {key['name']}")
+    print("Found: {key['name']}")
 else:
     print("Key not found or has been revoked")
 ```
@@ -212,7 +212,7 @@ def list_keys_by_environment(api_key):
     """Categorize keys by environment based on name."""
     response = requests.get(
         "https://api-aptly.nsquaredlabs.com/v1/api-keys",
-        headers={"Authorization": f"Bearer {api_key}"}
+        headers={"Authorization": "Bearer {api_key}"}
     )
     result = response.json()
 
@@ -236,9 +236,9 @@ def list_keys_by_environment(api_key):
 
     for env, keys in environments.items():
         if keys:
-            print(f"\n{env.upper()}:")
+            print("\n{env.upper()}:")
             for key in keys:
-                print(f"  - {key['name']} ({key['key_prefix']})")
+                print("  - {key['name']} ({key['key_prefix']})")
 
 # Usage
 list_keys_by_environment("apt_live_xyz789")
@@ -253,7 +253,7 @@ def key_usage_dashboard(api_key):
     """Display a dashboard of API key usage."""
     response = requests.get(
         "https://api-aptly.nsquaredlabs.com/v1/api-keys",
-        headers={"Authorization": f"Bearer {api_key}"}
+        headers={"Authorization": "Bearer {api_key}"}
     )
     result = response.json()
 
@@ -262,10 +262,10 @@ def key_usage_dashboard(api_key):
     print("=" * 60)
 
     for key in result['api_keys']:
-        print(f"\n📋 {key['name']}")
-        print(f"   ID: {key['id']}")
-        print(f"   Prefix: {key['key_prefix']}")
-        print(f"   Rate Limit: {key['rate_limit_per_hour']}/hour")
+        print("\n📋 {key['name']}")
+        print("   ID: {key['id']}")
+        print("   Prefix: {key['key_prefix']}")
+        print("   Rate Limit: {key['rate_limit_per_hour']}/hour")
 
         last_used = key.get('last_used_at')
         if last_used:
@@ -274,10 +274,10 @@ def key_usage_dashboard(api_key):
             age_days = (datetime.now(timezone.utc) - created).days
             last_used_days = (datetime.now(timezone.utc) - used).days
 
-            print(f"   Age: {age_days} days")
-            print(f"   Last Used: {last_used_days} days ago")
+            print("   Age: {age_days} days")
+            print("   Last Used: {last_used_days} days ago")
         else:
-            print(f"   Status: Never used")
+            print("   Status: Never used")
 
     print("\n" + "=" * 60)
 ```
