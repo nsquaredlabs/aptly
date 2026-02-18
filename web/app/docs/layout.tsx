@@ -208,8 +208,8 @@ export default function DocsLayout({
           </aside>
 
           {/* Main docs content */}
-          <main className="flex-1 max-w-3xl">
-            <article className="prose prose-gray max-w-none">
+          <main className="flex-1 max-w-4xl">
+            <article className="prose max-w-none pb-16">
               {children}
             </article>
           </main>

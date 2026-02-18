@@ -17,10 +17,12 @@ import {
   ResponseField,
   Expandable,
 } from './components'
+import { CodeBlock } from './components/CodeBlock'
 
 export function useMDXComponents(components: Record<string, React.ComponentType<any>>) {
   return {
     ...components,
+    pre: (props: any) => <CodeBlock {...props} />,
     Card,
     CardGroup,
     CodeGroup,
