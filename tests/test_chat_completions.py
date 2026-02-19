@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 
 from tests.conftest import (
+    TEST_API_KEY_HASH,
     TEST_CUSTOMER,
     TEST_API_KEY,
     TEST_API_KEY_DATA,
@@ -1142,3 +1143,121 @@ async def test_chat_completion_redact_response_option(client, mock_supabase):
     # Response content should be redacted
     assert data["choices"][0]["message"]["content"] == "The CEO is PERSON_A."
     assert data["aptly"]["response_pii_detected"] is True
+
+
+# ========== Framework-Specific Entity Detection Tests ==========
+
+
+@pytest.mark.asyncio
+async def test_chat_completion_hipaa_detects_mrn(client, mock_supabase):
+    """HIPAA framework should detect Medical Record Numbers."""
+    # TEST_CUSTOMER already has compliance_frameworks: ["HIPAA"]
+    setup_auth_mocks(mock_supabase)
+
+    with patch("src.compliance.audit_logger.supabase") as audit_mock:
+        audit_table = MagicMock()
+        audit_mock.table.return_value = audit_table
+        audit_table.insert.return_value = audit_table
+        audit_table.execute.return_value = MagicMock(
+            data=[{"id": "log_hipaa123"}]
+        )
+
+        with patch("src.main.call_llm") as mock_call_llm:
+            mock_call_llm.return_value = LLMResponse(
+                id="chatcmpl-hipaa",
+                model="gpt-4o-mini",
+                content="I understand the patient record.",
+                finish_reason="stop",
+                tokens_input=10,
+                tokens_output=5,
+                cost_usd=Decimal("0.0001"),
+            )
+
+            response = await client.post(
+                "/v1/chat/completions",
+                headers={"Authorization": f"Bearer {TEST_API_KEY}"},
+                json={
+                    "model": "gpt-4o-mini",
+                    "messages": [
+                        {"role": "user", "content": "Patient MRN: A1234567 has diabetes"}
+                    ],
+                    "api_keys": {"openai": "sk-test123"},
+                },
+            )
+
+    assert response.status_code == 200
+    data = response.json()
+
+    # Verify PII was detected (MRN and/or PERSON from "Patient")
+    assert data["aptly"]["pii_detected"] is True
+    assert data["aptly"]["compliance_framework"] == "HIPAA"
+
+    # Verify the message sent to LLM had the MRN redacted
+    call_args = mock_call_llm.call_args
+    sent_messages = call_args.kwargs.get("messages") or call_args[1].get("messages") or call_args[0][1]
+    user_content = sent_messages[-1]["content"]
+    # The original MRN "A1234567" should not appear in the sent message
+    assert "A1234567" not in user_content
+
+
+@pytest.mark.asyncio
+async def test_chat_completion_no_frameworks_uses_baseline(client, mock_supabase):
+    """Customer with no frameworks should use baseline entities only."""
+    # Override TEST_CUSTOMER to have no frameworks
+    from tests.conftest import TEST_API_KEY_DATA
+
+    no_framework_customer = {
+        **TEST_CUSTOMER,
+        "compliance_frameworks": [],
+    }
+    api_key_with_customer = {
+        **TEST_API_KEY_DATA,
+        "customers": no_framework_customer,
+    }
+    mock_table = mock_supabase.table.return_value
+    mock_result = MagicMock()
+    mock_result.data = api_key_with_customer
+    mock_table.execute.return_value = mock_result
+
+    with patch("src.compliance.audit_logger.supabase") as audit_mock:
+        audit_table = MagicMock()
+        audit_mock.table.return_value = audit_table
+        audit_table.insert.return_value = audit_table
+        audit_table.execute.return_value = MagicMock(
+            data=[{"id": "log_baseline123"}]
+        )
+
+        with patch("src.main.call_llm") as mock_call_llm:
+            mock_call_llm.return_value = LLMResponse(
+                id="chatcmpl-baseline",
+                model="gpt-4o-mini",
+                content="I understand.",
+                finish_reason="stop",
+                tokens_input=10,
+                tokens_output=5,
+                cost_usd=Decimal("0.0001"),
+            )
+
+            response = await client.post(
+                "/v1/chat/completions",
+                headers={"Authorization": f"Bearer {TEST_API_KEY}"},
+                json={
+                    "model": "gpt-4o-mini",
+                    "messages": [
+                        {"role": "user", "content": "Email is john@example.com"}
+                    ],
+                    "api_keys": {"openai": "sk-test123"},
+                },
+            )
+
+    assert response.status_code == 200
+    data = response.json()
+
+    # Baseline entities like EMAIL_ADDRESS should still be detected
+    assert data["aptly"]["pii_detected"] is True
+
+    # The email should have been redacted
+    call_args = mock_call_llm.call_args
+    sent_messages = call_args.kwargs.get("messages") or call_args[1].get("messages") or call_args[0][1]
+    user_content = sent_messages[-1]["content"]
+    assert "john@example.com" not in user_content

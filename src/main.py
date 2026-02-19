@@ -45,6 +45,7 @@ from src.auth import (
 from src.rate_limiter import rate_limiter, get_rate_limit_headers
 from src.compliance.pii_redactor import PIIRedactor
 from src.compliance.audit_logger import audit_logger, AuditLogEntry
+from src.compliance.framework_entities import get_entities_for_frameworks
 from src.llm_router import (
     call_llm,
     detect_provider,
@@ -704,8 +705,21 @@ async def chat_completions(
             },
         )
 
-    # Initialize PII redactor with customer's mode
-    redactor = PIIRedactor(mode=customer.pii_redaction_mode)
+    # Get framework-specific entities to detect
+    entities = get_entities_for_frameworks(customer.compliance_frameworks)
+
+    logger.info(
+        "pii_redaction_starting",
+        customer_id=customer.id,
+        frameworks=customer.compliance_frameworks,
+        entity_count=len(entities),
+    )
+
+    # Initialize PII redactor with customer's mode and framework-specific entities
+    redactor = PIIRedactor(
+        mode=customer.pii_redaction_mode,
+        entities=entities,
+    )
 
     # Redact PII from messages
     messages_dict = [m.model_dump() for m in request.messages]

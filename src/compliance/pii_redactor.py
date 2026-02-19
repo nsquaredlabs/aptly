@@ -6,7 +6,9 @@ from presidio_analyzer import AnalyzerEngine
 from presidio_analyzer.nlp_engine import NlpEngineProvider
 from presidio_anonymizer import AnonymizerEngine
 
-# Supported PII entity types
+from src.compliance.custom_recognizers import get_custom_recognizers
+
+# Supported PII entity types (default baseline)
 SUPPORTED_ENTITIES = [
     "PERSON",
     "EMAIL_ADDRESS",
@@ -53,9 +55,24 @@ class PIIRedactor:
     - mask: "John Smith" → "PERSON_A"
     - hash: "John Smith" → "HASH_a3f2c1b9"
     - remove: "John Smith" → "[REDACTED]"
+
+    Supports framework-specific entity detection:
+    - Pass custom entity list to detect only specific PII types
+    - If entities is None, uses SUPPORTED_ENTITIES (baseline)
     """
 
-    def __init__(self, mode: RedactionMode = "mask"):
+    def __init__(
+        self,
+        mode: RedactionMode = "mask",
+        entities: list[str] | None = None,
+    ):
+        """
+        Initialize PIIRedactor with optional framework-specific entities.
+
+        Args:
+            mode: Redaction mode (mask, hash, remove)
+            entities: List of entity types to detect. If None, uses SUPPORTED_ENTITIES.
+        """
         # Configure NLP engine to use the smaller spaCy model
         nlp_config = {
             "nlp_engine_name": "spacy",
@@ -63,8 +80,14 @@ class PIIRedactor:
         }
         nlp_engine = NlpEngineProvider(nlp_configuration=nlp_config).create_engine()
         self.analyzer = AnalyzerEngine(nlp_engine=nlp_engine)
+
+        # Add custom recognizers for framework-specific entities
+        for recognizer in get_custom_recognizers():
+            self.analyzer.registry.add_recognizer(recognizer)
+
         self.anonymizer = AnonymizerEngine()
         self.mode = mode
+        self.entities = entities or SUPPORTED_ENTITIES
 
     def redact(self, text: str) -> RedactionResult:
         """
@@ -83,10 +106,10 @@ class PIIRedactor:
                 pii_detected=False,
             )
 
-        # Detect PII entities
+        # Detect PII entities using framework-specific entity list
         results = self.analyzer.analyze(
             text=text,
-            entities=SUPPORTED_ENTITIES,
+            entities=self.entities,
             language="en",
         )
 
@@ -190,9 +213,22 @@ class PIIRedactor:
 _default_redactor: PIIRedactor | None = None
 
 
-def get_redactor(mode: RedactionMode = "mask") -> PIIRedactor:
-    """Get a PIIRedactor instance with the specified mode."""
+def get_redactor(
+    mode: RedactionMode = "mask",
+    entities: list[str] | None = None,
+) -> PIIRedactor:
+    """
+    Get a PIIRedactor instance with the specified mode and entities.
+
+    Args:
+        mode: Redaction mode (mask, hash, remove)
+        entities: List of entity types to detect. If None, uses SUPPORTED_ENTITIES.
+
+    Returns:
+        PIIRedactor instance
+    """
     global _default_redactor
-    if _default_redactor is None or _default_redactor.mode != mode:
-        _default_redactor = PIIRedactor(mode=mode)
+    # Always create a new instance since entities may differ per request
+    # (Framework-specific entity lists can vary by customer)
+    _default_redactor = PIIRedactor(mode=mode, entities=entities)
     return _default_redactor
