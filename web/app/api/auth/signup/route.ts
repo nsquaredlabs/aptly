@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 import { adminCreateCustomer } from '@/lib/aptly-api'
 
 export async function POST(request: NextRequest) {
@@ -7,6 +8,13 @@ export async function POST(request: NextRequest) {
 
   if (!supabaseUserId || !email || !company_name) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+  }
+
+  // Verify the caller owns the Supabase Auth user they claim
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user || user.id !== supabaseUserId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const admin = createAdminClient()

@@ -47,7 +47,7 @@ export default async function DashboardPage() {
     { count: totalRequests },
     { count: requestsToday },
     { data: recentLogs },
-    { data: activeKeys },
+    { count: activeKeyCount },
     { data: piiLogs },
     { data: piiToday },
   ] = await Promise.all([
@@ -88,7 +88,7 @@ export default async function DashboardPage() {
           <StatCard label="Requests this month" value={totalRequests ?? 0} />
           <StatCard label="PII detections this month" value={piiDetectionsMonth} />
           <StatCard label="Requests today" value={requestsToday ?? 0} />
-          <StatCard label="Active API keys" value={activeKeys?.length ?? 0} />
+          <StatCard label="Active API keys" value={activeKeyCount ?? 0} />
         </div>
 
         {/* Recent activity */}

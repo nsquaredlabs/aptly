@@ -47,6 +47,7 @@ export default function SignupPage() {
     }
 
     router.push('/dashboard')
+    router.refresh()
   }
 
   return (

@@ -26,10 +26,12 @@ export async function revokeKey(keyId: string): Promise<void> {
 
   if (!key) throw new Error('Key not found')
 
-  await admin
+  const { error: revokeError } = await admin
     .from('api_keys')
     .update({ is_revoked: true, revoked_at: new Date().toISOString() })
     .eq('id', keyId)
+
+  if (revokeError) throw new Error(`Failed to revoke key: ${revokeError.message}`)
 
   revalidatePath('/dashboard/api-keys')
 }
