@@ -2,7 +2,21 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
-export async function GET(request: NextRequest) {
+interface AuditLogRow {
+  id: string
+  created_at: string
+  provider: string
+  model: string
+  pii_detected: unknown[]
+  tokens_input: number | null
+  tokens_output: number | null
+  latency_ms: number | null
+  compliance_framework: string | null
+}
+
+const CSV_HEADER = ['id', 'created_at', 'provider', 'model', 'pii_detected_count', 'tokens_input', 'tokens_output', 'latency_ms', 'compliance_framework']
+
+export async function GET(_request: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -24,18 +38,8 @@ export async function GET(request: NextRequest) {
     .limit(10000)
 
   const rows = [
-    ['id', 'created_at', 'provider', 'model', 'pii_detected_count', 'tokens_input', 'tokens_output', 'latency_ms', 'compliance_framework'],
-    ...(logs ?? []).map((l: {
-      id: string
-      created_at: string
-      provider: string
-      model: string
-      pii_detected: unknown[]
-      tokens_input: number | null
-      tokens_output: number | null
-      latency_ms: number | null
-      compliance_framework: string | null
-    }) => [
+    CSV_HEADER,
+    ...(logs ?? []).map((l: AuditLogRow) => [
       l.id,
       l.created_at,
       l.provider,

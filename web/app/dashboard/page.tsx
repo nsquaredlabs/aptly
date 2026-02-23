@@ -1,10 +1,6 @@
 import { requireAuth } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 
-interface PiiRow {
-  pii_detected: unknown[]
-}
-
 interface AuditLog {
   id: string
   model: string
@@ -14,7 +10,7 @@ interface AuditLog {
   compliance_framework: string | null
 }
 
-function countPiiEntities(rows: PiiRow[]): number {
+function countPiiEntities(rows: { pii_detected: unknown[] }[]): number {
   return rows.reduce(
     (sum, row) => sum + (Array.isArray(row.pii_detected) ? row.pii_detected.length : 0),
     0

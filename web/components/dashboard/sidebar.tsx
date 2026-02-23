@@ -34,7 +34,9 @@ export default function Sidebar({ companyName }: SidebarProps) {
 
       <nav className="flex-1 px-3 py-4 space-y-0.5">
         {NAV.map(({ href, label, icon }) => {
-          const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
+          const active = href === '/dashboard'
+            ? pathname === '/dashboard'
+            : pathname.startsWith(href)
           return (
             <Link
               key={href}
