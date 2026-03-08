@@ -94,17 +94,143 @@ PORT=8000
 SENTRY_DSN=                         # Error tracking
 ```
 
-## Main Endpoints
+## API Reference and Examples
 
-- `POST /v1/chat/completions` - OpenAI-compatible chat completion with PII redaction
-- `GET /v1/logs` - Query audit logs
-- `GET /v1/logs/{id}` - Get log details
-- `GET /v1/analytics/usage` - Usage summary
-- `GET /v1/analytics/models` - Model breakdown
-- `GET /v1/analytics/users` - User breakdown
-- `GET /v1/analytics/pii` - PII statistics
-- `GET /v1/analytics/export` - Export data (CSV/JSON)
-- `GET /v1/health` - Health check (no auth)
+All endpoints except `/v1/health` require `Authorization: Bearer <APTLY_API_SECRET>`.
+
+### POST /v1/chat/completions
+
+OpenAI-compatible chat completion with automatic PII redaction. Users pass their own LLM provider keys per-request.
+
+**Request body:**
+
+```json
+{
+  "model": "gpt-4",                          // Required: LLM model name
+  "messages": [                               // Required: OpenAI-format messages
+    {"role": "user", "content": "Hello"}
+  ],
+  "api_keys": {"openai": "sk-..."},          // Required: provider API keys
+  "user": "user-123",                         // Optional: end-user ID for audit logs
+  "stream": false,                            // Optional: enable SSE streaming
+  "temperature": 0.7,                         // Optional: sampling temperature
+  "max_tokens": 500,                          // Optional: max response tokens
+  "top_p": 1.0,                              // Optional
+  "frequency_penalty": 0.0,                   // Optional
+  "presence_penalty": 0.0,                    // Optional
+  "stop": null,                               // Optional: stop sequences
+  "redact_response": false                    // Optional: redact PII in LLM response too
+}
+```
+
+**Provider key mapping** — the `api_keys` dict key must match the provider:
+
+| Provider | Models (examples) | Key name |
+|----------|-------------------|----------|
+| OpenAI | `gpt-4`, `gpt-4o`, `gpt-3.5-turbo` | `openai` |
+| Anthropic | `claude-3-5-sonnet-20241022` | `anthropic` |
+| Google | `gemini/gemini-pro` | `google` |
+| Cohere | `command-r`, `command-r-plus` | `cohere` |
+| Together | `together_ai/meta-llama/...` | `together_ai` |
+
+**Example curl:**
+
+```bash
+curl -X POST http://localhost:8000/v1/chat/completions \
+  -H "Authorization: Bearer $APTLY_API_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gpt-4",
+    "messages": [{"role": "user", "content": "My name is John Smith and my SSN is 123-45-6789"}],
+    "api_keys": {"openai": "sk-YOUR_KEY"},
+    "user": "user-123"
+  }'
+```
+
+**Response shape:**
+
+```json
+{
+  "id": "chatcmpl-abc123",
+  "object": "chat.completion",
+  "created": 1709900000,
+  "model": "gpt-4",
+  "choices": [{"index": 0, "message": {"role": "assistant", "content": "..."}, "finish_reason": "stop"}],
+  "usage": {"prompt_tokens": 25, "completion_tokens": 50, "total_tokens": 75},
+  "aptly": {
+    "audit_log_id": "uuid-here",
+    "pii_detected": true,
+    "pii_entities": ["PERSON", "US_SSN"],
+    "response_pii_detected": false,
+    "response_pii_entities": [],
+    "compliance_framework": null,
+    "latency_ms": 1200
+  }
+}
+```
+
+The `aptly` field is Aptly-specific metadata added to every response.
+
+**Using the OpenAI Python SDK:**
+
+```python
+from openai import OpenAI
+
+client = OpenAI(base_url="http://localhost:8000/v1", api_key="my-test-secret")
+response = client.chat.completions.create(
+    model="gpt-4",
+    messages=[{"role": "user", "content": "Hello from alice@example.com"}],
+    extra_body={"api_keys": {"openai": "sk-YOUR_KEY"}},
+)
+```
+
+**Streaming** — set `"stream": true`. Returns SSE in OpenAI format. The final chunk includes `aptly` metadata.
+
+### GET /v1/logs
+
+Query audit logs. All query params are optional.
+
+```
+GET /v1/logs?start_date=2025-01-01&end_date=2025-01-31&user_id=user-123&model=gpt-4&limit=50&page=1
+```
+
+Defaults to last 30 days if no dates provided.
+
+### GET /v1/logs/{id}
+
+Get full audit log detail including `request_data` and `response_data`.
+
+### GET /v1/analytics/usage
+
+```
+GET /v1/analytics/usage?start_date=2025-01-01&end_date=2025-01-31&granularity=day
+```
+
+`granularity`: `day`, `week`, or `month`.
+
+### GET /v1/analytics/models
+
+Model/provider breakdown for the given date range.
+
+### GET /v1/analytics/users
+
+End-user breakdown. `limit` param (max 100).
+
+### GET /v1/analytics/pii
+
+PII detection statistics: rates, entity type counts, time series.
+
+### GET /v1/analytics/export
+
+```
+GET /v1/analytics/export?start_date=2025-01-01&end_date=2025-01-31&format=csv&include=usage,pii
+```
+
+`format`: `csv` or `json`. `include`: comma-separated filter (optional).
+
+### GET /v1/health
+
+No auth required. Returns `{"status": "healthy", "version": "...", "checks": {"database": "ok", "redis": "ok"}}`.
 
 ## Testing
 

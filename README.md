@@ -127,26 +127,165 @@ All configuration is via environment variables (or `.env` file):
 
 ---
 
-## API Endpoints
+## API Usage
 
 All endpoints (except health check) require `Authorization: Bearer <APTLY_API_SECRET>`.
 
 ### Chat Completions
-- `POST /v1/chat/completions` - OpenAI-compatible chat completion with automatic PII redaction
+
+`POST /v1/chat/completions` — OpenAI-compatible chat completion with automatic PII redaction.
+
+**Basic request:**
+
+```bash
+curl -X POST http://localhost:8000/v1/chat/completions \
+  -H "Authorization: Bearer my-test-secret" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gpt-4",
+    "messages": [{"role": "user", "content": "Summarize this report for John Smith, SSN 123-45-6789"}],
+    "api_keys": {"openai": "sk-YOUR_OPENAI_KEY"}
+  }'
+```
+
+**With optional parameters:**
+
+```bash
+curl -X POST http://localhost:8000/v1/chat/completions \
+  -H "Authorization: Bearer my-test-secret" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "claude-3-5-sonnet-20241022",
+    "messages": [{"role": "user", "content": "Hello from user alice@example.com"}],
+    "api_keys": {"anthropic": "sk-ant-YOUR_KEY"},
+    "user": "user-123",
+    "temperature": 0.7,
+    "max_tokens": 500,
+    "redact_response": true,
+    "stream": false
+  }'
+```
+
+**Response:**
+
+```json
+{
+  "id": "chatcmpl-abc123",
+  "object": "chat.completion",
+  "created": 1709900000,
+  "model": "gpt-4",
+  "choices": [
+    {
+      "index": 0,
+      "message": {"role": "assistant", "content": "Here is the summary..."},
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {"prompt_tokens": 25, "completion_tokens": 50, "total_tokens": 75},
+  "aptly": {
+    "audit_log_id": "a1b2c3d4-...",
+    "pii_detected": true,
+    "pii_entities": ["PERSON", "US_SSN"],
+    "response_pii_detected": false,
+    "response_pii_entities": [],
+    "compliance_framework": null,
+    "latency_ms": 1200
+  }
+}
+```
+
+**Streaming:**
+
+```bash
+curl -N -X POST http://localhost:8000/v1/chat/completions \
+  -H "Authorization: Bearer my-test-secret" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gpt-4",
+    "messages": [{"role": "user", "content": "Tell me a story"}],
+    "api_keys": {"openai": "sk-YOUR_OPENAI_KEY"},
+    "stream": true
+  }'
+```
+
+Returns Server-Sent Events (SSE) in the same format as OpenAI's streaming API. The final chunk includes an `aptly` metadata field with PII detection results and the audit log ID.
+
+**Using with Python (OpenAI SDK):**
+
+```python
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="http://localhost:8000/v1",
+    api_key="my-test-secret",
+)
+
+response = client.chat.completions.create(
+    model="gpt-4",
+    messages=[{"role": "user", "content": "Hello, my email is alice@example.com"}],
+    extra_body={"api_keys": {"openai": "sk-YOUR_OPENAI_KEY"}},
+)
+print(response.choices[0].message.content)
+```
+
+**Supported providers and models:**
+
+Pass the appropriate key in `api_keys` for the model you choose:
+
+| Provider | Example Models | `api_keys` key |
+|----------|---------------|----------------|
+| OpenAI | `gpt-4`, `gpt-4o`, `gpt-3.5-turbo` | `openai` |
+| Anthropic | `claude-3-5-sonnet-20241022`, `claude-3-haiku-20240307` | `anthropic` |
+| Google | `gemini/gemini-pro`, `gemini/gemini-1.5-flash` | `google` |
+| Cohere | `command-r`, `command-r-plus` | `cohere` |
+| Together | `together_ai/meta-llama/...` | `together_ai` |
 
 ### Audit Logs
-- `GET /v1/logs` - Query audit logs (with filtering by date, user, model)
-- `GET /v1/logs/{id}` - Get detailed log entry
+
+**List logs with filtering:**
+
+```bash
+curl "http://localhost:8000/v1/logs?start_date=2025-01-01&end_date=2025-01-31&user_id=user-123&model=gpt-4&limit=20&page=1" \
+  -H "Authorization: Bearer my-test-secret"
+```
+
+**Get a specific log entry:**
+
+```bash
+curl http://localhost:8000/v1/logs/a1b2c3d4-e5f6-7890-abcd-ef1234567890 \
+  -H "Authorization: Bearer my-test-secret"
+```
 
 ### Analytics
-- `GET /v1/analytics/usage` - Usage summary with time series
-- `GET /v1/analytics/models` - Breakdown by model/provider
-- `GET /v1/analytics/users` - Breakdown by end-user
-- `GET /v1/analytics/pii` - PII detection statistics
-- `GET /v1/analytics/export` - Export data (CSV/JSON)
 
-### Health
-- `GET /v1/health` - Health check (no auth required)
+```bash
+# Usage summary with time series (granularity: day, week, or month)
+curl "http://localhost:8000/v1/analytics/usage?start_date=2025-01-01&end_date=2025-01-31&granularity=day" \
+  -H "Authorization: Bearer my-test-secret"
+
+# Breakdown by model/provider
+curl "http://localhost:8000/v1/analytics/models?start_date=2025-01-01&end_date=2025-01-31" \
+  -H "Authorization: Bearer my-test-secret"
+
+# Breakdown by end-user
+curl "http://localhost:8000/v1/analytics/users?start_date=2025-01-01&end_date=2025-01-31&limit=50" \
+  -H "Authorization: Bearer my-test-secret"
+
+# PII detection statistics
+curl "http://localhost:8000/v1/analytics/pii?start_date=2025-01-01&end_date=2025-01-31" \
+  -H "Authorization: Bearer my-test-secret"
+
+# Export data as CSV or JSON
+curl "http://localhost:8000/v1/analytics/export?start_date=2025-01-01&end_date=2025-01-31&format=csv" \
+  -H "Authorization: Bearer my-test-secret" -o analytics.csv
+```
+
+### Health Check
+
+```bash
+curl http://localhost:8000/v1/health
+# {"status": "healthy", "version": "1.0.0", "checks": {"database": "ok", "redis": "ok"}}
+```
 
 ---
 
