@@ -4,7 +4,10 @@ import structlog
 from collections import defaultdict
 from datetime import datetime, timedelta
 
-from src.supabase_client import supabase
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.models import AuditLog
 
 logger = structlog.get_logger()
 
@@ -12,19 +15,34 @@ logger = structlog.get_logger()
 class AnalyticsService:
     """Aggregates audit log data into analytics views."""
 
-    def _fetch_logs(self, customer_id: str, start_date: datetime, end_date: datetime) -> list[dict]:
-        """Fetch all audit logs for a customer in the given date range."""
+    async def _fetch_logs(self, start_date: datetime, end_date: datetime, session: AsyncSession) -> list[dict]:
+        """Fetch all audit logs in the given date range."""
         try:
-            result = (
-                supabase.table("audit_logs")
-                .select("*")
-                .eq("customer_id", customer_id)
-                .gte("created_at", start_date.isoformat())
-                .lte("created_at", end_date.isoformat())
-                .order("created_at")
-                .execute()
+            result = await session.execute(
+                select(AuditLog)
+                .where(
+                    AuditLog.created_at >= start_date,
+                    AuditLog.created_at <= end_date,
+                )
+                .order_by(AuditLog.created_at)
             )
-            return result.data or []
+            rows = result.scalars().all()
+            return [
+                {
+                    "id": str(r.id),
+                    "user_id": r.user_id,
+                    "provider": r.provider,
+                    "model": r.model,
+                    "tokens_input": r.tokens_input,
+                    "tokens_output": r.tokens_output,
+                    "latency_ms": r.latency_ms,
+                    "cost_usd": str(r.cost_usd) if r.cost_usd is not None else "0",
+                    "pii_detected": r.pii_detected or [],
+                    "response_pii_detected": r.response_pii_detected or [],
+                    "created_at": r.created_at.isoformat() if r.created_at else None,
+                }
+                for r in rows
+            ]
         except Exception as e:
             logger.error("analytics_fetch_failed", error=str(e))
             return []
@@ -46,12 +64,12 @@ class AnalyticsService:
 
     async def get_usage_summary(
         self,
-        customer_id: str,
         start_date: datetime,
         end_date: datetime,
+        session: AsyncSession,
         granularity: str = "day",
     ) -> dict:
-        logs = self._fetch_logs(customer_id, start_date, end_date)
+        logs = await self._fetch_logs(start_date, end_date, session)
         buckets: dict[str, dict] = {}
         total_latency_sum = 0
         total_latency_count = 0
@@ -113,11 +131,11 @@ class AnalyticsService:
 
     async def get_model_breakdown(
         self,
-        customer_id: str,
         start_date: datetime,
         end_date: datetime,
+        session: AsyncSession,
     ) -> dict:
-        logs = self._fetch_logs(customer_id, start_date, end_date)
+        logs = await self._fetch_logs(start_date, end_date, session)
         total_requests = len(logs)
         models: dict[tuple[str, str], dict] = {}
 
@@ -160,12 +178,12 @@ class AnalyticsService:
 
     async def get_user_breakdown(
         self,
-        customer_id: str,
         start_date: datetime,
         end_date: datetime,
+        session: AsyncSession,
         limit: int = 50,
     ) -> dict:
-        logs = self._fetch_logs(customer_id, start_date, end_date)
+        logs = await self._fetch_logs(start_date, end_date, session)
         users: dict[str, dict] = {}
         no_id = {"requests": 0, "tokens_input": 0, "tokens_output": 0, "cost_usd": 0.0}
 
@@ -222,11 +240,11 @@ class AnalyticsService:
 
     async def get_pii_stats(
         self,
-        customer_id: str,
         start_date: datetime,
         end_date: datetime,
+        session: AsyncSession,
     ) -> dict:
-        logs = self._fetch_logs(customer_id, start_date, end_date)
+        logs = await self._fetch_logs(start_date, end_date, session)
         total = len(logs)
         input_pii_count = 0
         response_pii_count = 0
@@ -296,16 +314,16 @@ class AnalyticsService:
 
     async def get_export_data(
         self,
-        customer_id: str,
         start_date: datetime,
         end_date: datetime,
+        session: AsyncSession,
         include: list[str] | None = None,
     ) -> list[dict]:
         """Return per-day aggregated rows for CSV/JSON export."""
         if include is None:
             include = ["usage", "models", "users", "pii"]
 
-        logs = self._fetch_logs(customer_id, start_date, end_date)
+        logs = await self._fetch_logs(start_date, end_date, session)
         days: dict[str, dict] = {}
 
         for log in logs:

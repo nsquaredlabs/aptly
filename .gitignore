@@ -26,9 +26,10 @@ ENV/
 env/
 .venv/
 
-# IDE
+# IDE / AI agents
 .idea/
 .vscode/
+.claude/
 *.swp
 *.swo
 *~

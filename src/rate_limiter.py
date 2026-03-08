@@ -21,9 +21,10 @@ class RateLimitResult:
 class RateLimiter:
     """Redis-based distributed rate limiter."""
 
-    def __init__(self, redis_url: str):
+    def __init__(self, redis_url: str | None):
         self.redis_url = redis_url
         self._redis: redis.Redis | None = None
+        self._disabled = redis_url is None
 
     async def _get_redis(self) -> redis.Redis:
         """Get or create Redis connection."""
@@ -35,41 +36,36 @@ class RateLimiter:
             )
         return self._redis
 
+    def _make_reset_at(self) -> datetime:
+        """Calculate reset time (top of next hour)."""
+        now = datetime.now(timezone.utc)
+        reset_at = now.replace(minute=0, second=0, microsecond=0)
+        reset_at = reset_at.replace(hour=reset_at.hour + 1) if reset_at.hour < 23 else reset_at.replace(
+            day=reset_at.day + 1, hour=0
+        )
+        return reset_at
+
     async def check_rate_limit(
         self,
         customer_id: str,
         limit_per_hour: int,
     ) -> RateLimitResult:
-        """
-        Check if request is within rate limit.
+        """Check if request is within rate limit."""
+        reset_at = self._make_reset_at()
 
-        Uses a sliding window approach with hourly buckets.
-        If Redis is unavailable, fails open (allows request) but logs warning.
+        if self._disabled:
+            return RateLimitResult(allowed=True, current_count=0, limit=limit_per_hour, reset_at=reset_at)
 
-        Args:
-            customer_id: The customer's unique identifier
-            limit_per_hour: Maximum requests allowed per hour
-
-        Returns:
-            RateLimitResult with allowed status and current counts
-        """
         now = datetime.now(timezone.utc)
         hour_bucket = now.strftime("%Y-%m-%d-%H")
         key = f"rate_limit:{customer_id}:{hour_bucket}"
 
-        # Calculate reset time (top of next hour)
-        reset_at = now.replace(minute=0, second=0, microsecond=0)
-        reset_at = reset_at.replace(hour=reset_at.hour + 1) if reset_at.hour < 23 else reset_at.replace(
-            day=reset_at.day + 1, hour=0
-        )
-
         try:
             r = await self._get_redis()
 
-            # Increment counter and set TTL atomically using pipeline
             async with r.pipeline(transaction=True) as pipe:
                 pipe.incr(key)
-                pipe.expire(key, 3600)  # 1 hour TTL
+                pipe.expire(key, 3600)
                 results = await pipe.execute()
 
             current_count = results[0]
@@ -91,7 +87,6 @@ class RateLimiter:
             )
 
         except redis.RedisError as e:
-            # Redis unavailable - fail open but log warning
             logger.warning(
                 "redis_unavailable_failing_open",
                 error=str(e),
@@ -106,6 +101,9 @@ class RateLimiter:
 
     async def get_current_usage(self, customer_id: str) -> int:
         """Get current usage count for the current hour."""
+        if self._disabled:
+            return 0
+
         now = datetime.now(timezone.utc)
         hour_bucket = now.strftime("%Y-%m-%d-%H")
         key = f"rate_limit:{customer_id}:{hour_bucket}"

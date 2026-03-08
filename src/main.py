@@ -11,13 +11,15 @@ from typing import Any
 import sentry_sdk
 from sentry_sdk.integrations.fastapi import FastApiIntegration
 from sentry_sdk.integrations.starlette import StarletteIntegration
-from fastapi import FastAPI, HTTPException, Response, status
+from fastapi import Depends, FastAPI, HTTPException, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field
 import redis.asyncio as redis
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.config import settings
+from src.db import get_db
 
 
 # Initialize Sentry if DSN is configured
@@ -26,22 +28,15 @@ if settings.sentry_dsn:
         dsn=settings.sentry_dsn,
         environment=settings.environment,
         release=f"aptly@{settings.api_version}",
-        traces_sample_rate=0.1,  # 10% of transactions for performance monitoring
-        profiles_sample_rate=0.1,  # 10% of sampled transactions for profiling
+        traces_sample_rate=0.1,
+        profiles_sample_rate=0.1,
         integrations=[
             FastApiIntegration(transaction_style="endpoint"),
             StarletteIntegration(transaction_style="endpoint"),
         ],
-        # Don't send PII to Sentry
         send_default_pii=False,
     )
-from src.supabase_client import supabase
-from src.auth import (
-    AdminAuth,
-    CustomerAuth,
-    generate_api_key,
-    hash_api_key,
-)
+from src.auth import ApiAuth
 from src.rate_limiter import rate_limiter, get_rate_limit_headers
 from src.compliance.pii_redactor import PIIRedactor
 from src.compliance.audit_logger import audit_logger, AuditLogEntry
@@ -78,18 +73,12 @@ app = FastAPI(
     description="Compliance-as-a-service middleware for LLM requests",
     version=settings.api_version,
     lifespan=lifespan,
-    servers=[
-        {
-            "url": "https://api-aptly.nsquaredlabs.com",
-            "description": "Production server"
-        }
-    ],
 )
 
-# Add CORS middleware to allow API documentation sites to make requests
+# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r"https://.*\.vercel\.app|https://aptly\.nsquaredlabs\.com|http://localhost:\d+",
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -112,44 +101,6 @@ class ErrorResponse(BaseModel):
     error: ErrorDetail
 
 
-# Admin Models
-class CreateCustomerRequest(BaseModel):
-    email: EmailStr
-    company_name: str | None = None
-    plan: str = "free"
-    compliance_frameworks: list[str] = Field(default_factory=list)
-
-
-class CustomerResponse(BaseModel):
-    id: str
-    email: str
-    company_name: str | None
-    plan: str
-    compliance_frameworks: list[str]
-    retention_days: int
-    pii_redaction_mode: str
-    created_at: datetime
-
-
-class APIKeyResponse(BaseModel):
-    id: str
-    key: str | None = None  # Only returned on creation
-    key_prefix: str
-    name: str | None
-    rate_limit_per_hour: int
-    created_at: datetime
-
-
-class CreateCustomerResponse(BaseModel):
-    customer: CustomerResponse
-    api_key: APIKeyResponse
-
-
-class CreateAPIKeyRequest(BaseModel):
-    name: str | None = None
-    rate_limit_per_hour: int = 1000
-
-
 # Chat Completion Models
 class ChatMessage(BaseModel):
     role: str
@@ -168,7 +119,7 @@ class ChatCompletionRequest(BaseModel):
     frequency_penalty: float | None = None
     presence_penalty: float | None = None
     stop: str | list[str] | None = None
-    redact_response: bool = False  # If True, redact PII in response content
+    redact_response: bool = False
 
 
 class ChatCompletionChoice(BaseModel):
@@ -233,31 +184,6 @@ class PaginationInfo(BaseModel):
 class AuditLogsResponse(BaseModel):
     logs: list[AuditLogSummary]
     pagination: PaginationInfo
-
-
-# Customer Profile Models
-class UsageInfo(BaseModel):
-    requests_this_month: int
-    tokens_this_month: int
-    rate_limit_per_hour: int
-    requests_this_hour: int
-
-
-class CustomerProfileResponse(BaseModel):
-    id: str
-    email: str
-    company_name: str | None
-    plan: str
-    compliance_frameworks: list[str]
-    retention_days: int
-    pii_redaction_mode: str
-    created_at: datetime
-    usage: UsageInfo
-
-
-class UpdateCustomerRequest(BaseModel):
-    pii_redaction_mode: str | None = None
-    compliance_frameworks: list[str] | None = None
 
 
 # Analytics Models
@@ -361,273 +287,36 @@ class PIIStatsResponse(BaseModel):
 
 
 @app.get("/v1/health")
-async def health_check():
+async def health_check(session: AsyncSession = Depends(get_db)):
     """Health check endpoint - no authentication required."""
     checks = {"database": "ok", "redis": "ok"}
 
     # Check database
     try:
-        supabase.table("customers").select("id").limit(1).execute()
+        from sqlalchemy import text
+        await session.execute(text("SELECT 1"))
     except Exception:
         checks["database"] = "error"
 
     # Check Redis
-    try:
-        r = redis.from_url(settings.redis_url)
-        await r.ping()
-        await r.close()
-    except Exception:
-        checks["redis"] = "error"
+    if settings.redis_url:
+        try:
+            r = redis.from_url(settings.redis_url)
+            await r.ping()
+            await r.close()
+        except Exception:
+            checks["redis"] = "error"
+    else:
+        checks["redis"] = "disabled"
 
-    status_value = "healthy" if all(v == "ok" for v in checks.values()) else "degraded"
+    all_ok = all(v in ("ok", "disabled") for v in checks.values())
+    status_value = "healthy" if all_ok else "degraded"
 
     return {
         "status": status_value,
         "version": settings.api_version,
         "checks": checks,
     }
-
-
-# ============================================================================
-# Admin Endpoints
-# ============================================================================
-
-
-@app.post(
-    "/v1/admin/customers",
-    response_model=CreateCustomerResponse,
-    status_code=status.HTTP_201_CREATED,
-)
-async def admin_create_customer(
-    request: CreateCustomerRequest,
-    _: AdminAuth,
-):
-    """Create a new customer. Admin authentication required."""
-    # Check if customer already exists
-    existing = (
-        supabase.table("customers")
-        .select("id")
-        .eq("email", request.email)
-        .execute()
-    )
-    if existing.data:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail={
-                "error": {
-                    "type": "conflict",
-                    "message": f"Customer with email {request.email} already exists",
-                    "code": "CONFLICT",
-                }
-            },
-        )
-
-    # Create customer
-    customer_data = {
-        "email": request.email,
-        "company_name": request.company_name,
-        "plan": request.plan,
-        "compliance_frameworks": request.compliance_frameworks,
-    }
-
-    try:
-        customer_result = supabase.table("customers").insert(customer_data).execute()
-        customer = customer_result.data[0]
-    except Exception as e:
-        logger.error("customer_creation_failed", error=str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={
-                "error": {
-                    "type": "internal_error",
-                    "message": "Failed to create customer",
-                    "code": "INTERNAL_ERROR",
-                }
-            },
-        )
-
-    # Generate and store API key
-    full_key, key_hash, key_prefix = generate_api_key("live")
-
-    api_key_data = {
-        "customer_id": customer["id"],
-        "key_hash": key_hash,
-        "key_prefix": key_prefix,
-        "name": "Default API Key",
-        "rate_limit_per_hour": settings.rate_limit_free
-        if request.plan == "free"
-        else settings.rate_limit_pro,
-    }
-
-    try:
-        key_result = supabase.table("api_keys").insert(api_key_data).execute()
-        api_key = key_result.data[0]
-    except Exception as e:
-        # Rollback customer creation
-        supabase.table("customers").delete().eq("id", customer["id"]).execute()
-        logger.error("api_key_creation_failed", error=str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={
-                "error": {
-                    "type": "internal_error",
-                    "message": "Failed to create API key",
-                    "code": "INTERNAL_ERROR",
-                }
-            },
-        )
-
-    logger.info(
-        "customer_created",
-        customer_id=customer["id"],
-        email=request.email,
-        plan=request.plan,
-    )
-
-    return CreateCustomerResponse(
-        customer=CustomerResponse(
-            id=customer["id"],
-            email=customer["email"],
-            company_name=customer.get("company_name"),
-            plan=customer["plan"],
-            compliance_frameworks=customer.get("compliance_frameworks", []),
-            retention_days=customer.get("retention_days", 2555),
-            pii_redaction_mode=customer.get("pii_redaction_mode", "mask"),
-            created_at=customer["created_at"],
-        ),
-        api_key=APIKeyResponse(
-            id=api_key["id"],
-            key=full_key,  # Only returned on creation
-            key_prefix=api_key["key_prefix"],
-            name=api_key.get("name"),
-            rate_limit_per_hour=api_key.get("rate_limit_per_hour", 1000),
-            created_at=api_key["created_at"],
-        ),
-    )
-
-
-@app.get("/v1/admin/customers")
-async def admin_list_customers(
-    _: AdminAuth,
-    limit: int = 50,
-    offset: int = 0,
-):
-    """List all customers. Admin authentication required."""
-    result = (
-        supabase.table("customers")
-        .select("*", count="exact")
-        .order("created_at", desc=True)
-        .range(offset, offset + limit - 1)
-        .execute()
-    )
-
-    return {
-        "customers": result.data,
-        "total": result.count,
-        "limit": limit,
-        "offset": offset,
-    }
-
-
-@app.get("/v1/admin/customers/{customer_id}")
-async def admin_get_customer(
-    customer_id: str,
-    _: AdminAuth,
-):
-    """Get customer details with API keys and usage. Admin authentication required."""
-    # Get customer
-    try:
-        customer_result = (
-            supabase.table("customers")
-            .select("*")
-            .eq("id", customer_id)
-            .single()
-            .execute()
-        )
-        customer = customer_result.data
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "error": {
-                    "type": "not_found",
-                    "message": "Customer not found",
-                    "code": "NOT_FOUND",
-                }
-            },
-        )
-
-    # Get API keys
-    keys_result = (
-        supabase.table("api_keys")
-        .select("id, key_prefix, name, is_revoked, created_at, last_used_at, rate_limit_per_hour")
-        .eq("customer_id", customer_id)
-        .execute()
-    )
-
-    # Get usage stats
-    now = datetime.now(timezone.utc)
-    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    usage = await audit_logger.get_usage_stats(customer_id, month_start, now)
-
-    return {
-        "customer": customer,
-        "api_keys": keys_result.data,
-        "usage": {
-            "requests_this_month": usage["requests"],
-            "tokens_this_month": usage["tokens"],
-        },
-    }
-
-
-@app.post(
-    "/v1/admin/customers/{customer_id}/api-keys",
-    response_model=APIKeyResponse,
-    status_code=status.HTTP_201_CREATED,
-)
-async def admin_create_api_key(
-    customer_id: str,
-    request: CreateAPIKeyRequest,
-    _: AdminAuth,
-):
-    """Create an API key for a customer. Admin authentication required."""
-    # Verify customer exists
-    try:
-        supabase.table("customers").select("id").eq("id", customer_id).single().execute()
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "error": {
-                    "type": "not_found",
-                    "message": "Customer not found",
-                    "code": "NOT_FOUND",
-                }
-            },
-        )
-
-    # Generate and store API key
-    full_key, key_hash, key_prefix = generate_api_key("live")
-
-    api_key_data = {
-        "customer_id": customer_id,
-        "key_hash": key_hash,
-        "key_prefix": key_prefix,
-        "name": request.name,
-        "rate_limit_per_hour": request.rate_limit_per_hour,
-    }
-
-    key_result = supabase.table("api_keys").insert(api_key_data).execute()
-    api_key = key_result.data[0]
-
-    return APIKeyResponse(
-        id=api_key["id"],
-        key=full_key,
-        key_prefix=api_key["key_prefix"],
-        name=api_key.get("name"),
-        rate_limit_per_hour=api_key.get("rate_limit_per_hour", 1000),
-        created_at=api_key["created_at"],
-    )
 
 
 # ============================================================================
@@ -638,22 +327,21 @@ async def admin_create_api_key(
 @app.post("/v1/chat/completions")
 async def chat_completions(
     request: ChatCompletionRequest,
-    auth: CustomerAuth,
+    _auth: ApiAuth,
     response: Response,
+    session: AsyncSession = Depends(get_db),
 ):
     """
     OpenAI-compatible chat completion endpoint with PII redaction.
 
-    Requires customer API key authentication.
+    Requires API secret authentication.
     """
     start_time = time.time()
-    customer = auth.customer
-    api_key_info = auth.api_key
 
-    # Check rate limit
+    # Check rate limit (global)
     rate_result = await rate_limiter.check_rate_limit(
-        customer.id,
-        api_key_info.rate_limit_per_hour,
+        "global",
+        settings.rate_limit_per_hour,
     )
 
     # Add rate limit headers
@@ -706,18 +394,17 @@ async def chat_completions(
         )
 
     # Get framework-specific entities to detect
-    entities = get_entities_for_frameworks(customer.compliance_frameworks)
+    entities = get_entities_for_frameworks(settings.compliance_frameworks)
 
     logger.info(
         "pii_redaction_starting",
-        customer_id=customer.id,
-        frameworks=customer.compliance_frameworks,
+        frameworks=settings.compliance_frameworks,
         entity_count=len(entities),
     )
 
-    # Initialize PII redactor with customer's mode and framework-specific entities
+    # Initialize PII redactor with configured mode and framework-specific entities
     redactor = PIIRedactor(
-        mode=customer.pii_redaction_mode,
+        mode=settings.pii_redaction_mode,
         entities=entities,
     )
 
@@ -727,7 +414,7 @@ async def chat_completions(
 
     # Get compliance framework (use first one if multiple)
     compliance_framework = (
-        customer.compliance_frameworks[0] if customer.compliance_frameworks else None
+        settings.compliance_frameworks[0] if settings.compliance_frameworks else None
     )
 
     # Build LLM kwargs
@@ -749,7 +436,6 @@ async def chat_completions(
     if request.stream:
         return await _handle_streaming_completion(
             request=request,
-            customer=customer,
             redacted_messages=redacted_messages,
             pii_detections=pii_detections,
             provider=provider,
@@ -757,6 +443,7 @@ async def chat_completions(
             start_time=start_time,
             llm_kwargs=llm_kwargs,
             redactor=redactor,
+            session=session,
         )
 
     # Non-streaming completion
@@ -828,7 +515,6 @@ async def chat_completions(
 
     audit_log_id = await audit_logger.log(
         AuditLogEntry(
-            customer_id=customer.id,
             provider=provider,
             model=request.model,
             request_data={"messages": redacted_messages},
@@ -841,7 +527,8 @@ async def chat_completions(
             latency_ms=latency_ms,
             cost_usd=llm_response.cost_usd,
             compliance_framework=compliance_framework,
-        )
+        ),
+        session=session,
     )
 
     # Build response
@@ -875,7 +562,6 @@ async def chat_completions(
 
 async def _handle_streaming_completion(
     request: ChatCompletionRequest,
-    customer,
     redacted_messages: list[dict],
     pii_detections: list,
     provider: str,
@@ -883,6 +569,7 @@ async def _handle_streaming_completion(
     start_time: float,
     llm_kwargs: dict,
     redactor: PIIRedactor,
+    session: AsyncSession,
 ):
     """Handle streaming chat completion."""
 
@@ -943,7 +630,6 @@ async def _handle_streaming_completion(
 
                     audit_log_id = await audit_logger.log(
                         AuditLogEntry(
-                            customer_id=customer.id,
                             provider=provider,
                             model=request.model,
                             request_data={"messages": redacted_messages},
@@ -951,11 +637,12 @@ async def _handle_streaming_completion(
                             user_id=request.user,
                             pii_detected=pii_log_data,
                             response_pii_detected=response_pii_log_data,
-                            tokens_input=0,  # Not available in streaming
+                            tokens_input=0,
                             tokens_output=0,
                             latency_ms=latency_ms,
                             compliance_framework=compliance_framework,
-                        )
+                        ),
+                        session=session,
                     )
 
                     chunk_data["aptly"] = {
@@ -991,111 +678,14 @@ async def _handle_streaming_completion(
 
 
 # ============================================================================
-# Customer API Key Management
-# ============================================================================
-
-
-@app.get("/v1/api-keys")
-async def list_api_keys(auth: CustomerAuth):
-    """List customer's API keys."""
-    result = (
-        supabase.table("api_keys")
-        .select("id, key_prefix, name, rate_limit_per_hour, is_revoked, created_at, last_used_at")
-        .eq("customer_id", auth.customer.id)
-        .eq("is_revoked", False)
-        .order("created_at", desc=True)
-        .execute()
-    )
-
-    return {"api_keys": result.data}
-
-
-@app.post("/v1/api-keys", response_model=APIKeyResponse, status_code=status.HTTP_201_CREATED)
-async def create_api_key(
-    request: CreateAPIKeyRequest,
-    auth: CustomerAuth,
-):
-    """Create a new API key for the authenticated customer."""
-    full_key, key_hash, key_prefix = generate_api_key("live")
-
-    api_key_data = {
-        "customer_id": auth.customer.id,
-        "key_hash": key_hash,
-        "key_prefix": key_prefix,
-        "name": request.name,
-        "rate_limit_per_hour": auth.api_key.rate_limit_per_hour,  # Inherit from current key
-    }
-
-    result = supabase.table("api_keys").insert(api_key_data).execute()
-    api_key = result.data[0]
-
-    return APIKeyResponse(
-        id=api_key["id"],
-        key=full_key,
-        key_prefix=api_key["key_prefix"],
-        name=api_key.get("name"),
-        rate_limit_per_hour=api_key.get("rate_limit_per_hour", 1000),
-        created_at=api_key["created_at"],
-    )
-
-
-@app.delete("/v1/api-keys/{key_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def revoke_api_key(
-    key_id: str,
-    auth: CustomerAuth,
-):
-    """Revoke an API key."""
-    # Check if key exists and belongs to customer
-    try:
-        key_result = (
-            supabase.table("api_keys")
-            .select("id, customer_id")
-            .eq("id", key_id)
-            .eq("customer_id", auth.customer.id)
-            .single()
-            .execute()
-        )
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "error": {
-                    "type": "not_found",
-                    "message": "API key not found",
-                    "code": "NOT_FOUND",
-                }
-            },
-        )
-
-    # Check if trying to revoke current key
-    if key_id == auth.api_key.id:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail={
-                "error": {
-                    "type": "conflict",
-                    "message": "Cannot revoke the API key you're currently using",
-                    "code": "CONFLICT",
-                }
-            },
-        )
-
-    # Revoke the key
-    supabase.table("api_keys").update(
-        {"is_revoked": True, "revoked_at": datetime.now(timezone.utc).isoformat()}
-    ).eq("id", key_id).execute()
-
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-
-# ============================================================================
 # Audit Logs
 # ============================================================================
 
 
 @app.get("/v1/logs", response_model=AuditLogsResponse)
 async def query_logs(
-    auth: CustomerAuth,
+    _auth: ApiAuth,
+    session: AsyncSession = Depends(get_db),
     start_date: str | None = None,
     end_date: str | None = None,
     user_id: str | None = None,
@@ -1129,7 +719,7 @@ async def query_logs(
         end_dt = datetime.now(timezone.utc)
 
     logs, total = await audit_logger.query_logs(
-        customer_id=auth.customer.id,
+        session=session,
         start_date=start_dt,
         end_date=end_dt,
         user_id=user_id,
@@ -1154,10 +744,11 @@ async def query_logs(
 @app.get("/v1/logs/{log_id}", response_model=AuditLogDetail)
 async def get_log_detail(
     log_id: str,
-    auth: CustomerAuth,
+    _auth: ApiAuth,
+    session: AsyncSession = Depends(get_db),
 ):
     """Get detailed audit log entry."""
-    log = await audit_logger.get_log(auth.customer.id, log_id)
+    log = await audit_logger.get_log(log_id, session)
 
     if not log:
         raise HTTPException(
@@ -1172,100 +763,6 @@ async def get_log_detail(
         )
 
     return AuditLogDetail(**log)
-
-
-# ============================================================================
-# Customer Profile
-# ============================================================================
-
-
-@app.get("/v1/me", response_model=CustomerProfileResponse)
-async def get_profile(auth: CustomerAuth):
-    """Get current customer's profile and usage."""
-    customer = auth.customer
-
-    # Get usage stats
-    now = datetime.now(timezone.utc)
-    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    usage = await audit_logger.get_usage_stats(customer.id, month_start, now)
-
-    # Get current hour usage
-    current_hour_usage = await rate_limiter.get_current_usage(customer.id)
-
-    return CustomerProfileResponse(
-        id=customer.id,
-        email=customer.email,
-        company_name=customer.company_name,
-        plan=customer.plan,
-        compliance_frameworks=customer.compliance_frameworks,
-        retention_days=customer.retention_days,
-        pii_redaction_mode=customer.pii_redaction_mode,
-        created_at=customer.created_at,
-        usage=UsageInfo(
-            requests_this_month=usage["requests"],
-            tokens_this_month=usage["tokens"],
-            rate_limit_per_hour=auth.api_key.rate_limit_per_hour,
-            requests_this_hour=current_hour_usage,
-        ),
-    )
-
-
-@app.patch("/v1/me", response_model=CustomerResponse)
-async def update_profile(
-    request: UpdateCustomerRequest,
-    auth: CustomerAuth,
-):
-    """Update customer settings."""
-    update_data = {}
-
-    if request.pii_redaction_mode is not None:
-        if request.pii_redaction_mode not in ("mask", "hash", "remove"):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail={
-                    "error": {
-                        "type": "invalid_request",
-                        "message": "pii_redaction_mode must be one of: mask, hash, remove",
-                        "code": "INVALID_REQUEST",
-                    }
-                },
-            )
-        update_data["pii_redaction_mode"] = request.pii_redaction_mode
-
-    if request.compliance_frameworks is not None:
-        update_data["compliance_frameworks"] = request.compliance_frameworks
-
-    if not update_data:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "error": {
-                    "type": "invalid_request",
-                    "message": "No valid fields to update",
-                    "code": "INVALID_REQUEST",
-                }
-            },
-        )
-
-    result = (
-        supabase.table("customers")
-        .update(update_data)
-        .eq("id", auth.customer.id)
-        .execute()
-    )
-
-    updated = result.data[0]
-
-    return CustomerResponse(
-        id=updated["id"],
-        email=updated["email"],
-        company_name=updated.get("company_name"),
-        plan=updated["plan"],
-        compliance_frameworks=updated.get("compliance_frameworks", []),
-        retention_days=updated.get("retention_days", 2555),
-        pii_redaction_mode=updated.get("pii_redaction_mode", "mask"),
-        created_at=updated["created_at"],
-    )
 
 
 # ============================================================================
@@ -1285,7 +782,8 @@ def _parse_date(date_str: str | None, default: datetime) -> datetime:
 
 @app.get("/v1/analytics/usage", response_model=UsageSummaryResponse)
 async def analytics_usage(
-    auth: CustomerAuth,
+    _auth: ApiAuth,
+    session: AsyncSession = Depends(get_db),
     start_date: str | None = None,
     end_date: str | None = None,
     granularity: str = "day",
@@ -1305,31 +803,33 @@ async def analytics_usage(
 
     now = datetime.now(timezone.utc)
     return await analytics_service.get_usage_summary(
-        customer_id=auth.customer.id,
         start_date=_parse_date(start_date, now - timedelta(days=30)),
         end_date=_parse_date(end_date, now),
+        session=session,
         granularity=granularity,
     )
 
 
 @app.get("/v1/analytics/models", response_model=ModelBreakdownResponse)
 async def analytics_models(
-    auth: CustomerAuth,
+    _auth: ApiAuth,
+    session: AsyncSession = Depends(get_db),
     start_date: str | None = None,
     end_date: str | None = None,
 ):
     """Breakdown of usage by model."""
     now = datetime.now(timezone.utc)
     return await analytics_service.get_model_breakdown(
-        customer_id=auth.customer.id,
         start_date=_parse_date(start_date, now - timedelta(days=30)),
         end_date=_parse_date(end_date, now),
+        session=session,
     )
 
 
 @app.get("/v1/analytics/users", response_model=UserBreakdownResponse)
 async def analytics_users(
-    auth: CustomerAuth,
+    _auth: ApiAuth,
+    session: AsyncSession = Depends(get_db),
     start_date: str | None = None,
     end_date: str | None = None,
     limit: int = 50,
@@ -1337,33 +837,35 @@ async def analytics_users(
     """Breakdown of usage by end-user."""
     now = datetime.now(timezone.utc)
     return await analytics_service.get_user_breakdown(
-        customer_id=auth.customer.id,
         start_date=_parse_date(start_date, now - timedelta(days=30)),
         end_date=_parse_date(end_date, now),
+        session=session,
         limit=min(max(1, limit), 100),
     )
 
 
 @app.get("/v1/analytics/pii", response_model=PIIStatsResponse)
 async def analytics_pii(
-    auth: CustomerAuth,
+    _auth: ApiAuth,
+    session: AsyncSession = Depends(get_db),
     start_date: str | None = None,
     end_date: str | None = None,
 ):
     """PII detection statistics."""
     now = datetime.now(timezone.utc)
     return await analytics_service.get_pii_stats(
-        customer_id=auth.customer.id,
         start_date=_parse_date(start_date, now - timedelta(days=30)),
         end_date=_parse_date(end_date, now),
+        session=session,
     )
 
 
 @app.get("/v1/analytics/export")
 async def analytics_export(
-    auth: CustomerAuth,
+    _auth: ApiAuth,
     start_date: str,
     end_date: str,
+    session: AsyncSession = Depends(get_db),
     format: str = "csv",
     include: str | None = None,
 ):
@@ -1385,9 +887,9 @@ async def analytics_export(
     include_list = [s.strip() for s in include.split(",")] if include else None
 
     rows = await analytics_service.get_export_data(
-        customer_id=auth.customer.id,
         start_date=start_dt,
         end_date=end_dt,
+        session=session,
         include=include_list,
     )
 

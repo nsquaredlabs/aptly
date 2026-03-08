@@ -2,6 +2,23 @@
 # Usage: docker compose up -d
 
 services:
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: aptly
+      POSTGRES_USER: aptly
+      POSTGRES_PASSWORD: aptly
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aptly"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
   redis:
     image: redis:7-alpine
     ports:
@@ -16,4 +33,5 @@ services:
     restart: unless-stopped
 
 volumes:
+  postgres_data:
   redis_data:

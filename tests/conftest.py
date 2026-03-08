@@ -1,93 +1,20 @@
 import os
 import pytest
-from unittest.mock import MagicMock, patch
-from datetime import datetime, timezone
 
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
 import fakeredis.aioredis
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 # Set environment variables before importing anything else
-os.environ["SUPABASE_URL"] = "https://test.supabase.co"
-os.environ["SUPABASE_SERVICE_KEY"] = "test-service-key"
-os.environ["REDIS_URL"] = "redis://localhost:6379/0"
-os.environ["APTLY_ADMIN_SECRET"] = "test-admin-secret-12345"
+os.environ["DATABASE_URL"] = "sqlite+aiosqlite://"
+os.environ["APTLY_API_SECRET"] = "test-secret-12345"
 os.environ["ENVIRONMENT"] = "test"
 
+from src.models import Base, AuditLog
+
 # Test data
-TEST_CUSTOMER = {
-    "id": "cus_test123",
-    "email": "test@example.com",
-    "company_name": "Test Company",
-    "plan": "pro",
-    "compliance_frameworks": ["HIPAA"],
-    "retention_days": 2555,
-    "pii_redaction_mode": "mask",
-    "metadata": {},
-    "created_at": datetime.now(timezone.utc).isoformat(),
-    "updated_at": datetime.now(timezone.utc).isoformat(),
-}
-
-TEST_API_KEY = "apt_test_abc123def456ghi789jkl012mno345"
-TEST_API_KEY_HASH = "a" * 64  # Simplified hash for testing
-
-TEST_API_KEY_DATA = {
-    "id": "key_test123",
-    "customer_id": TEST_CUSTOMER["id"],
-    "key_hash": TEST_API_KEY_HASH,
-    "key_prefix": "apt_test_abc123",
-    "name": "Test API Key",
-    "rate_limit_per_hour": 1000,
-    "is_revoked": False,
-    "created_at": datetime.now(timezone.utc).isoformat(),
-    "last_used_at": None,
-}
-
-TEST_ADMIN_SECRET = "test-admin-secret-12345"
-
-
-def create_mock_supabase():
-    """Create a mock Supabase client."""
-    mock = MagicMock()
-    mock_table = MagicMock()
-    mock.table.return_value = mock_table
-    mock_table.select.return_value = mock_table
-    mock_table.insert.return_value = mock_table
-    mock_table.update.return_value = mock_table
-    mock_table.delete.return_value = mock_table
-    mock_table.eq.return_value = mock_table
-    mock_table.neq.return_value = mock_table
-    mock_table.gte.return_value = mock_table
-    mock_table.lte.return_value = mock_table
-    mock_table.order.return_value = mock_table
-    mock_table.range.return_value = mock_table
-    mock_table.limit.return_value = mock_table
-    mock_table.single.return_value = mock_table
-    return mock
-
-
-def setup_auth_mocks(mock_supabase, include_customer=True):
-    """Helper to set up authentication mocks."""
-    mock_table = mock_supabase.table.return_value
-
-    if include_customer:
-        # Mock API key lookup with nested customer
-        api_key_with_customer = {
-            **TEST_API_KEY_DATA,
-            "customers": TEST_CUSTOMER,
-        }
-        mock_result = MagicMock()
-        mock_result.data = api_key_with_customer
-        mock_table.execute.return_value = mock_result
-    else:
-        # Mock not found
-        mock_table.execute.side_effect = Exception("Not found")
-
-
-@pytest.fixture
-def mock_supabase():
-    """Mock Supabase client for testing."""
-    return create_mock_supabase()
+TEST_API_SECRET = "test-secret-12345"
 
 
 @pytest.fixture
@@ -109,33 +36,40 @@ async def fake_redis(fake_redis_server):
 
 
 @pytest_asyncio.fixture
-async def client(mock_supabase, fake_redis):
-    """Test client with mocked dependencies."""
-    # Import after environment is set
-    import src.supabase_client
-    import src.auth
-    import src.main
-    import src.compliance.audit_logger
-    import src.analytics
+async def db_engine():
+    """Create an in-memory SQLite engine for tests."""
+    engine = create_async_engine("sqlite+aiosqlite://", echo=False)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    yield engine
+    await engine.dispose()
+
+
+@pytest_asyncio.fixture
+async def db_session(db_engine):
+    """Provide a test database session."""
+    session_factory = async_sessionmaker(db_engine, class_=AsyncSession, expire_on_commit=False)
+    async with session_factory() as session:
+        yield session
+
+
+@pytest_asyncio.fixture
+async def client(db_session, fake_redis):
+    """Test client with SQLAlchemy test session and fake Redis."""
     from src.main import app
+    from src.db import get_db
     from src.rate_limiter import rate_limiter
 
-    # Replace supabase in all modules that import it
-    original_supabase_client = src.supabase_client.supabase
-    original_auth = src.auth.supabase
-    original_main = src.main.supabase
-    original_audit = src.compliance.audit_logger.supabase
-    original_analytics = src.analytics.supabase
+    async def override_get_db():
+        yield db_session
 
-    src.supabase_client.supabase = mock_supabase
-    src.auth.supabase = mock_supabase
-    src.main.supabase = mock_supabase
-    src.compliance.audit_logger.supabase = mock_supabase
-    src.analytics.supabase = mock_supabase
+    app.dependency_overrides[get_db] = override_get_db
 
     # Replace the rate limiter's redis with our fake
     original_redis = rate_limiter._redis
+    original_disabled = rate_limiter._disabled
     rate_limiter._redis = fake_redis
+    rate_limiter._disabled = False
 
     async with AsyncClient(
         transport=ASGITransport(app=app),
@@ -144,41 +78,13 @@ async def client(mock_supabase, fake_redis):
         yield ac
 
     # Restore
-    src.supabase_client.supabase = original_supabase_client
-    src.auth.supabase = original_auth
-    src.main.supabase = original_main
-    src.compliance.audit_logger.supabase = original_audit
-    src.analytics.supabase = original_analytics
+    app.dependency_overrides.clear()
     rate_limiter._redis = original_redis
+    rate_limiter._disabled = original_disabled
 
 
 @pytest_asyncio.fixture
-async def authenticated_client(client, mock_supabase):
-    """Client with valid API key authentication set up."""
-    setup_auth_mocks(mock_supabase, include_customer=True)
-    client.headers["Authorization"] = f"Bearer {TEST_API_KEY}"
+async def authenticated_client(client):
+    """Client with valid API secret authentication set up."""
+    client.headers["Authorization"] = f"Bearer {TEST_API_SECRET}"
     yield client
-
-
-@pytest.fixture
-def test_customer():
-    """Return test customer data."""
-    return TEST_CUSTOMER.copy()
-
-
-@pytest.fixture
-def test_api_key():
-    """Return test API key."""
-    return TEST_API_KEY
-
-
-@pytest.fixture
-def test_api_key_data():
-    """Return test API key data."""
-    return TEST_API_KEY_DATA.copy()
-
-
-@pytest.fixture
-def admin_headers():
-    """Return admin authentication headers."""
-    return {"X-Admin-Secret": TEST_ADMIN_SECRET}
