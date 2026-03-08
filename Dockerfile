@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy project files for install
-COPY pyproject.toml .
+COPY pyproject.toml README.md ./
 COPY src/ ./src/
 COPY alembic/ ./alembic/
 COPY alembic.ini .
