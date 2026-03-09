@@ -494,14 +494,19 @@ async def chat_completions(
 
     latency_ms = int((time.time() - start_time) * 1000)
 
-    # Scan response content for PII
+    # Get response and un-redact (restore original PII for the user)
     response_content = llm_response.content
-    response_redaction_result = redactor.redact(response_content)
+    unredacted_content = redactor.unredact(response_content, pii_detections)
+
+    # Scan response content for PII
+    response_redaction_result = redactor.redact(unredacted_content)
     response_pii_detections = response_redaction_result.detections
 
     # Optionally redact response content
     if request.redact_response and response_pii_detections:
-        response_content = response_redaction_result.redacted_text
+        response_content_for_user = response_redaction_result.redacted_text
+    else:
+        response_content_for_user = unredacted_content
 
     # Create audit log
     pii_log_data = [
@@ -539,7 +544,7 @@ async def chat_completions(
         choices=[
             ChatCompletionChoice(
                 index=0,
-                message=ChatMessage(role="assistant", content=response_content),
+                message=ChatMessage(role="assistant", content=response_content_for_user),
                 finish_reason=llm_response.finish_reason,
             )
         ],
@@ -589,8 +594,10 @@ async def _handle_streaming_completion(
 
             async for chunk in stream:
                 response_id = chunk.id
+                unredacted_chunk = None
                 if chunk.content:
                     full_content += chunk.content
+                    unredacted_chunk = redactor.unredact(chunk.content, pii_detections)
 
                 if chunk.finish_reason:
                     finish_reason = chunk.finish_reason
@@ -604,7 +611,7 @@ async def _handle_streaming_completion(
                     "choices": [
                         {
                             "index": 0,
-                            "delta": {"content": chunk.content} if chunk.content else {},
+                            "delta": {"content": unredacted_chunk} if unredacted_chunk else {},
                             "finish_reason": chunk.finish_reason,
                         }
                     ],

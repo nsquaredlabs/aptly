@@ -235,3 +235,74 @@ def test_supported_entity_types():
 
     for entity_type in expected_types:
         assert entity_type in SUPPORTED_ENTITIES
+
+
+def test_unredact_mask_mode(mock_analyzer):
+    """Unredact restores original PII values in mask mode."""
+    mock_analyzer.analyze.return_value = [
+        MockRecognizerResult("PERSON", start=8, end=18, score=0.95)
+    ]
+
+    from src.compliance.pii_redactor import PIIRedactor
+
+    redactor = PIIRedactor(mode="mask")
+    result = redactor.redact("Patient John Smith has diabetes.")
+
+    assert "PERSON_A" in result.redacted_text
+    assert "John Smith" not in result.redacted_text
+
+    restored = redactor.unredact(result.redacted_text, result.detections)
+    assert restored == "Patient John Smith has diabetes."
+
+
+def test_unredact_hash_mode(mock_analyzer):
+    """Unredact restores original PII values in hash mode."""
+    mock_analyzer.analyze.return_value = [
+        MockRecognizerResult("PERSON", start=0, end=10, score=0.95)
+    ]
+
+    from src.compliance.pii_redactor import PIIRedactor
+
+    redactor = PIIRedactor(mode="hash")
+    result = redactor.redact("John Smith went to the store.")
+
+    assert "John Smith" not in result.redacted_text
+    assert result.redacted_text.startswith("HASH_")
+
+    restored = redactor.unredact(result.redacted_text, result.detections)
+    assert restored == "John Smith went to the store."
+
+
+def test_unredact_remove_mode_noop(mock_analyzer):
+    """Unredact in remove mode returns text unchanged (cannot reverse [REDACTED])."""
+    mock_analyzer.analyze.return_value = [
+        MockRecognizerResult("PERSON", start=0, end=10, score=0.95)
+    ]
+
+    from src.compliance.pii_redactor import PIIRedactor
+
+    redactor = PIIRedactor(mode="remove")
+    result = redactor.redact("John Smith went to the store.")
+
+    assert "[REDACTED]" in result.redacted_text
+
+    restored = redactor.unredact(result.redacted_text, result.detections)
+    assert restored == result.redacted_text
+    assert "[REDACTED]" in restored
+
+
+def test_unredact_no_placeholders(mock_analyzer):
+    """Unredact returns text unchanged when there are no placeholders."""
+    mock_analyzer.analyze.return_value = [
+        MockRecognizerResult("PERSON", start=0, end=10, score=0.95)
+    ]
+
+    from src.compliance.pii_redactor import PIIRedactor
+
+    redactor = PIIRedactor(mode="mask")
+    result = redactor.redact("John Smith went to the store.")
+
+    # Apply unredact to text that has no placeholders
+    clean_text = "The weather is nice today."
+    restored = redactor.unredact(clean_text, result.detections)
+    assert restored == "The weather is nice today."

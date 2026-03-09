@@ -60,6 +60,9 @@ htmlcov/
 *.log
 /logs/
 
+# Claude Code personal config
+CLAUDE.md
+
 # OS
 .DS_Store
 Thumbs.db

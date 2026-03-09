@@ -44,7 +44,7 @@ python -m spacy download en_core_web_sm
 
 ### Request Flow
 ```
-Client Request → API Secret Auth → PII Redaction → LLM Provider (via LiteLLM) → Audit Log → Response
+Client Request → API Secret Auth → PII Redaction → LLM Provider (via LiteLLM) → PII Restoration → Audit Log → Response
 ```
 
 ### Core Components
@@ -54,7 +54,7 @@ Client Request → API Secret Auth → PII Redaction → LLM Provider (via LiteL
 - **src/db.py** - Async database engine + session factory + `get_db()` FastAPI dependency
 - **src/config.py** - Pydantic settings loaded from environment variables
 - **src/auth.py** - Single shared secret auth (`Authorization: Bearer <APTLY_API_SECRET>`)
-- **src/compliance/pii_redactor.py** - Microsoft Presidio integration for PII detection (PERSON, EMAIL, SSN, CREDIT_CARD, etc.)
+- **src/compliance/pii_redactor.py** - Microsoft Presidio integration for PII detection and redaction (PERSON, EMAIL, SSN, CREDIT_CARD, etc.), plus un-redaction to restore original PII in LLM responses
 - **src/compliance/audit_logger.py** - Immutable audit log writer (database trigger prevents modification)
 - **src/llm_router.py** - LiteLLM abstraction for multi-provider support (OpenAI, Anthropic, Google, Cohere, Together)
 - **src/rate_limiter.py** - Redis-based distributed rate limiting with fail-open behavior (disabled when Redis not configured)
@@ -71,9 +71,12 @@ Client Request → API Secret Auth → PII Redaction → LLM Provider (via LiteL
 6. **Config via Environment**: PII redaction mode, compliance frameworks, rate limits all configured via env vars
 
 ### PII Redaction Modes
-- `mask`: "John Smith" → "PERSON_A"
-- `hash`: "John Smith" → "HASH_a3f2c1b9"
-- `remove`: "John Smith" → "[REDACTED]"
+- `mask`: "John Smith" → "PERSON_A" (reversible — original restored in response)
+- `hash`: "John Smith" → "HASH_a3f2c1b9" (reversible — original restored in response)
+- `remove`: "John Smith" → "[REDACTED]" (irreversible — cannot restore in response)
+
+### PII Un-redaction Flow
+After the LLM responds, placeholders (e.g., "PERSON_A") are replaced back with original values before returning to the user. The audit log always stores the redacted version. Set `redact_response: true` to skip restoration and keep PII redacted in the user-facing response.
 
 ## Environment Variables
 

@@ -36,6 +36,7 @@ class PIIDetection:
     confidence: float
     start: int
     end: int
+    original_value: str
 
 
 @dataclass
@@ -124,10 +125,20 @@ class PIIRedactor:
         entity_counts: dict[str, int] = {}
         detections: list[PIIDetection] = []
 
-        # Sort by start position for consistent processing
-        sorted_results = sorted(results, key=lambda x: x.start)
+        # Sort by start position, then by higher confidence for ties
+        sorted_results = sorted(results, key=lambda x: (x.start, -x.score))
 
+        # Filter out overlapping detections, keeping higher-confidence ones
+        filtered_results = []
         for result in sorted_results:
+            if filtered_results and result.start < filtered_results[-1].end:
+                # Overlapping — keep the one with higher confidence
+                if result.score > filtered_results[-1].score:
+                    filtered_results[-1] = result
+                continue
+            filtered_results.append(result)
+
+        for result in filtered_results:
             entity_type = result.entity_type
             entity_counts[entity_type] = entity_counts.get(entity_type, 0) + 1
             label = chr(ord("A") + entity_counts[entity_type] - 1)
@@ -150,6 +161,7 @@ class PIIRedactor:
                     confidence=result.score,
                     start=result.start,
                     end=result.end,
+                    original_value=original_value,
                 )
             )
 
@@ -207,6 +219,18 @@ class PIIRedactor:
                 redacted_messages.append({**message, "content": redacted_content})
 
         return redacted_messages, all_detections
+
+    def unredact(self, text: str, detections: list[PIIDetection]) -> str:
+        """Replace redaction placeholders in text with their original values.
+
+        Not possible in 'remove' mode since [REDACTED] is not unique per entity.
+        """
+        if self.mode == "remove":
+            return text
+        result = text
+        for detection in detections:
+            result = result.replace(detection.replacement, detection.original_value)
+        return result
 
 
 # Create a default instance for import convenience

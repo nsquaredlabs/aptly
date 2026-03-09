@@ -58,7 +58,7 @@ curl -X POST http://localhost:8000/v1/chat/completions \
   }'
 ```
 
-Aptly detects `John Smith` and `123-45-6789` as PII, redacts them before sending to OpenAI, logs the request, and returns the response with PII metadata.
+Aptly detects `John Smith` and `123-45-6789` as PII, redacts them before sending to OpenAI, logs the request, restores the original PII in the response for you, and returns the response with PII metadata.
 
 ### 6. Check audit logs
 
@@ -73,7 +73,7 @@ curl http://localhost:8000/v1/logs \
 
 Organizations need LLMs but can't risk sending sensitive data to external APIs. Aptly solves this by:
 
-- **Automatic PII Redaction** - Detects and redacts sensitive data (SSN, emails, names, credit cards) before sending to LLMs
+- **Automatic PII Redaction & Restoration** - Detects and redacts sensitive data before sending to LLMs, then restores it in the response so your users see the original context
 - **Immutable Audit Logs** - Every request logged with database-enforced immutability for compliance
 - **Multi-Provider Support** - Works with OpenAI, Anthropic, Google, Cohere, and more via unified API
 - **OpenAI-Compatible** - Drop-in replacement requiring minimal code changes
@@ -85,7 +85,7 @@ Organizations need LLMs but can't risk sending sensitive data to external APIs. 
 ## How It Works
 
 ```
-Client Request → Auth → PII Redaction → LLM Provider → Audit Log → Response
+Client Request → Auth → PII Redaction → LLM Provider → PII Restoration → Audit Log → Response
 ```
 
 ### PII Redaction Modes
@@ -97,6 +97,8 @@ Client Request → Auth → PII Redaction → LLM Provider → Audit Log → Res
 | `remove` | `"John Smith"` → `"[REDACTED]"` |
 
 Supported entity types: PERSON, EMAIL, PHONE_NUMBER, SSN, CREDIT_CARD, and more via Microsoft Presidio.
+
+PII is automatically restored in the LLM response — the user sees original values while the LLM never does. In `mask` and `hash` modes, placeholders in the response are replaced back with original values. In `remove` mode, restoration is not possible since `[REDACTED]` is not reversible. Set `redact_response: true` to keep PII redacted in the response as well.
 
 ### Compliance Frameworks
 

@@ -104,9 +104,13 @@ async def test_chat_completion_pii_redaction(client):
                         confidence=0.95,
                         start=8,
                         end=18,
+                        original_value="John Smith",
                     )
                 ],
             )
+
+            # Mock unredact to return content as-is (no placeholders in LLM response)
+            mock_redactor.unredact.side_effect = lambda text, _: text
 
             # Mock redact for response PII scan
             mock_redactor.redact.return_value = RedactionResult(
@@ -369,11 +373,14 @@ async def test_chat_completion_response_pii_detection(client):
                 [],
             )
 
+            # Mock unredact to return content as-is
+            mock_redactor.unredact.side_effect = lambda text, _: text
+
             # PII in response
             mock_redactor.redact.return_value = RedactionResult(
                 redacted_text="PERSON_A is doing well.",
                 detections=[
-                    PIIDetection(type="PERSON", replacement="PERSON_A", confidence=0.9, start=0, end=10)
+                    PIIDetection(type="PERSON", replacement="PERSON_A", confidence=0.9, start=0, end=10, original_value="John Smith")
                 ],
                 pii_detected=True,
             )
@@ -424,3 +431,152 @@ async def test_chat_completion_llm_error(client):
     assert response.status_code == 502
     data = response.json()
     assert data["detail"]["error"]["code"] == "PROVIDER_ERROR"
+
+
+@pytest.mark.asyncio
+async def test_chat_completion_unredacts_response(client):
+    """LLM response containing redaction placeholders is un-redacted for the user."""
+    with patch("src.main.audit_logger") as mock_audit:
+        mock_audit.log = AsyncMock(return_value="log_unredact")
+
+        with patch("src.main.PIIRedactor") as mock_redactor_class:
+            mock_redactor = MagicMock()
+            mock_redactor_class.return_value = mock_redactor
+            mock_redactor.mode = "mask"
+
+            # Input PII redaction: "My name is John Smith" → "My name is PERSON_A"
+            mock_redactor.redact_messages.return_value = (
+                [{"role": "user", "content": "My name is PERSON_A"}],
+                [
+                    PIIDetection(
+                        type="PERSON",
+                        replacement="PERSON_A",
+                        confidence=0.95,
+                        start=11,
+                        end=21,
+                        original_value="John Smith",
+                    )
+                ],
+            )
+
+            # unredact replaces PERSON_A → John Smith in LLM response
+            mock_redactor.unredact.return_value = "Hello John Smith"
+
+            # Response PII scan on the unredacted content
+            mock_redactor.redact.return_value = RedactionResult(
+                redacted_text="Hello PERSON_A",
+                detections=[
+                    PIIDetection(
+                        type="PERSON",
+                        replacement="PERSON_A",
+                        confidence=0.95,
+                        start=6,
+                        end=16,
+                        original_value="John Smith",
+                    )
+                ],
+                pii_detected=True,
+            )
+
+            with patch("src.main.call_llm") as mock_call_llm:
+                mock_call_llm.return_value = LLMResponse(
+                    id="chatcmpl-unredact",
+                    model="gpt-4",
+                    content="Hello PERSON_A",
+                    finish_reason="stop",
+                    tokens_input=10,
+                    tokens_output=5,
+                    cost_usd=Decimal("0.0005"),
+                )
+
+                response = await client.post(
+                    "/v1/chat/completions",
+                    headers={"Authorization": f"Bearer {TEST_API_SECRET}"},
+                    json={
+                        "model": "gpt-4",
+                        "messages": [
+                            {"role": "user", "content": "My name is John Smith"}
+                        ],
+                        "api_keys": {"openai": "sk-test123"},
+                    },
+                )
+
+    assert response.status_code == 200
+    data = response.json()
+    # The user-facing response should contain the original PII (un-redacted)
+    assert "John Smith" in data["choices"][0]["message"]["content"]
+    assert "PERSON_A" not in data["choices"][0]["message"]["content"]
+    mock_redactor.unredact.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_chat_completion_audit_log_stays_redacted(client):
+    """Audit log stores the raw LLM response (redacted), not the un-redacted version."""
+    with patch("src.main.audit_logger") as mock_audit:
+        mock_audit.log = AsyncMock(return_value="log_audit_redacted")
+
+        with patch("src.main.PIIRedactor") as mock_redactor_class:
+            mock_redactor = MagicMock()
+            mock_redactor_class.return_value = mock_redactor
+            mock_redactor.mode = "mask"
+
+            mock_redactor.redact_messages.return_value = (
+                [{"role": "user", "content": "My name is PERSON_A"}],
+                [
+                    PIIDetection(
+                        type="PERSON",
+                        replacement="PERSON_A",
+                        confidence=0.95,
+                        start=11,
+                        end=21,
+                        original_value="John Smith",
+                    )
+                ],
+            )
+
+            mock_redactor.unredact.return_value = "Hello John Smith"
+
+            mock_redactor.redact.return_value = RedactionResult(
+                redacted_text="Hello PERSON_A",
+                detections=[
+                    PIIDetection(
+                        type="PERSON",
+                        replacement="PERSON_A",
+                        confidence=0.95,
+                        start=6,
+                        end=16,
+                        original_value="John Smith",
+                    )
+                ],
+                pii_detected=True,
+            )
+
+            with patch("src.main.call_llm") as mock_call_llm:
+                mock_call_llm.return_value = LLMResponse(
+                    id="chatcmpl-audit-redact",
+                    model="gpt-4",
+                    content="Hello PERSON_A",
+                    finish_reason="stop",
+                    tokens_input=10,
+                    tokens_output=5,
+                    cost_usd=Decimal("0.0005"),
+                )
+
+                response = await client.post(
+                    "/v1/chat/completions",
+                    headers={"Authorization": f"Bearer {TEST_API_SECRET}"},
+                    json={
+                        "model": "gpt-4",
+                        "messages": [
+                            {"role": "user", "content": "My name is John Smith"}
+                        ],
+                        "api_keys": {"openai": "sk-test123"},
+                    },
+                )
+
+    assert response.status_code == 200
+    # Verify audit log was called with the raw LLM response (still redacted)
+    mock_audit.log.assert_called_once()
+    audit_entry = mock_audit.log.call_args[0][0]
+    assert audit_entry.response_data["content"] == "Hello PERSON_A"
+    assert "John Smith" not in audit_entry.response_data["content"]
