@@ -17,6 +17,93 @@ def get_custom_recognizers() -> list[PatternRecognizer]:
         List of PatternRecognizer instances to be added to Presidio analyzer.
     """
     return [
+        # ========== Baseline Overrides ==========
+        # US SSN — Presidio's built-in UsSsnRecognizer has "very weak" patterns
+        # that fail with en_core_web_sm. This custom recognizer detects reliably.
+        PatternRecognizer(
+            supported_entity="US_SSN",
+            patterns=[
+                Pattern(
+                    name="ssn_dashed",
+                    regex=r"\b(?!9\d{2}-[7-9]\d)\d{3}-\d{2}-\d{4}\b",
+                    score=0.85,
+                ),
+                Pattern(
+                    name="ssn_spaced",
+                    regex=r"\b(?!9\d{2} [7-9]\d)\d{3} \d{2} \d{4}\b",
+                    score=0.85,
+                ),
+                Pattern(
+                    name="ssn_dotted",
+                    regex=r"\b(?!9\d{2}\.[7-9]\d)\d{3}\.\d{2}\.\d{4}\b",
+                    score=0.85,
+                ),
+            ],
+            context=["social", "security", "ssn", "ssid", "tax"],
+        ),
+        # US Passport — built-in scores 0.05-0.1, effectively broken
+        PatternRecognizer(
+            supported_entity="US_PASSPORT",
+            patterns=[
+                Pattern(
+                    name="passport_9digit",
+                    regex=r"\b[0-9]{9}\b",
+                    score=0.4,
+                ),
+                Pattern(
+                    name="passport_next_gen",
+                    regex=r"\b[A-Z][0-9]{8}\b",
+                    score=0.5,
+                ),
+            ],
+            context=["passport", "travel", "document", "state department"],
+        ),
+        # US Driver's License — built-in scores 0.01-0.3, effectively broken
+        PatternRecognizer(
+            supported_entity="US_DRIVER_LICENSE",
+            patterns=[
+                Pattern(
+                    name="license_alpha_numeric",
+                    regex=r"\b[A-Z][0-9]{7,12}\b",
+                    score=0.4,
+                ),
+                Pattern(
+                    name="license_numeric",
+                    regex=r"\b[0-9]{7,13}\b",
+                    score=0.3,
+                ),
+            ],
+            context=["driver", "license", "licence", "dl", "driving", "dmv"],
+        ),
+        # US ITIN — built-in scores 0.05-0.3, effectively broken
+        PatternRecognizer(
+            supported_entity="US_ITIN",
+            patterns=[
+                Pattern(
+                    name="itin_dashed",
+                    regex=r"\b9\d{2}-[7-9]\d-\d{4}\b",
+                    score=0.85,
+                ),
+                Pattern(
+                    name="itin_spaced",
+                    regex=r"\b9\d{2} [7-9]\d \d{4}\b",
+                    score=0.85,
+                ),
+            ],
+            context=["itin", "tax", "individual", "taxpayer"],
+        ),
+        # US Bank Account — built-in score 0.05, effectively broken
+        PatternRecognizer(
+            supported_entity="US_BANK_NUMBER",
+            patterns=[
+                Pattern(
+                    name="bank_account",
+                    regex=r"\b[0-9]{8,17}\b",
+                    score=0.3,
+                ),
+            ],
+            context=["bank", "account", "checking", "savings", "routing", "deposit"],
+        ),
         # ========== HIPAA Recognizers ==========
         # Medical Record Number (MRN)
         PatternRecognizer(

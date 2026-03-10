@@ -82,6 +82,20 @@ class PIIRedactor:
         nlp_engine = NlpEngineProvider(nlp_configuration=nlp_config).create_engine()
         self.analyzer = AnalyzerEngine(nlp_engine=nlp_engine)
 
+        # Remove broken built-in recognizers (score too weak with en_core_web_sm)
+        # and replace with custom ones that have reliable base scores
+        broken_builtins = {
+            "UsSsnRecognizer",
+            "UsPassportRecognizer",
+            "UsLicenseRecognizer",
+            "UsItinRecognizer",
+            "UsBankRecognizer",
+        }
+        self.analyzer.registry.recognizers = [
+            r for r in self.analyzer.registry.recognizers
+            if r.name not in broken_builtins
+        ]
+
         # Add custom recognizers for framework-specific entities
         for recognizer in get_custom_recognizers():
             self.analyzer.registry.add_recognizer(recognizer)
@@ -128,12 +142,20 @@ class PIIRedactor:
         # Sort by start position, then by higher confidence for ties
         sorted_results = sorted(results, key=lambda x: (x.start, -x.score))
 
-        # Filter out overlapping detections, keeping higher-confidence ones
+        # Generic entity types that should yield to more specific overlapping matches
+        generic_types = {"DATE_TIME", "URL", "PHONE_NUMBER"}
+
+        # Filter out overlapping detections, preferring specific entities
         filtered_results = []
         for result in sorted_results:
             if filtered_results and result.start < filtered_results[-1].end:
-                # Overlapping — keep the one with higher confidence
-                if result.score > filtered_results[-1].score:
+                prev = filtered_results[-1]
+                # Prefer specific entity over generic when scores are close
+                prev_is_generic = prev.entity_type in generic_types
+                curr_is_generic = result.entity_type in generic_types
+                if (result.score > prev.score
+                        or (prev_is_generic and not curr_is_generic
+                            and result.score >= prev.score - 0.2)):
                     filtered_results[-1] = result
                 continue
             filtered_results.append(result)
